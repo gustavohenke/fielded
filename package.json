@@ -1,0 +1,14 @@
+{
+  "name": "fielded",
+  "description": "Bring your forms into your business logic layer.",
+  "repository": "gustavohenke/fielded",
+  "version": "0.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "vitest"
+  },
+  "devDependencies": {
+    "typescript": "^4.7.4",
+    "vitest": "^0.18.0"
+  }
+}

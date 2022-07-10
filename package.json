@@ -5,11 +5,15 @@
   "version": "0.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "vitest"
+    "test": "vitest",
+    "storybook:start": "start-storybook -p 6006",
+    "storybook:build": "build-storybook"
   },
-  "dependencies": {},
   "devDependencies": {
+    "@storybook/react": "^6.5.9",
     "prettier": "^2.7.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
     "typescript": "^4.7.4",
     "vitest": "^0.18.0"
   }

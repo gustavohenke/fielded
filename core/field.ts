@@ -61,9 +61,14 @@ export class Field<Value extends FieldValue> {
   }
 
   /**
-   * @returns An object of React props that represent the current state of the field
+   * Builds and returns an observable bag of handy React props for rendering an input or textarea
+   * element that represent this field.
    */
-  getReactProps() {
+  getReactProps(): {
+    type: string;
+    value: NonNullable<Value> | "";
+    onChange: (evt: ChangeEvent) => void;
+  } {
     const { value, type } = this;
     return {
       type,
@@ -89,9 +94,10 @@ function isTextField(field: Field<any>): field is Field<string> {
   return field.type === "text";
 }
 
-function makeChangeCallback(
-  field: Field<any>,
-): (evt: { target: HTMLInputElement | HTMLTextAreaElement }) => void {
+type ChangeEvent = {
+  target: HTMLInputElement | HTMLTextAreaElement;
+};
+function makeChangeCallback<T extends Field<any>>(field: T): (evt: ChangeEvent) => void {
   return (evt) => {
     if (isNumberField(field)) {
       const value = Number(evt.target.value);

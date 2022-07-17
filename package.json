@@ -2,7 +2,7 @@
   "name": "fielded",
   "description": "Bring your forms into your business logic layer.",
   "repository": "gustavohenke/fielded",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "main": "index.js",
   "scripts": {
     "build": "tsc -p .",

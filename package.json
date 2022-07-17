@@ -9,8 +9,12 @@
     "storybook:start": "start-storybook -p 6006",
     "storybook:build": "build-storybook"
   },
+  "dependencies": {
+    "mobx": "^6.6.1"
+  },
   "devDependencies": {
     "@storybook/react": "^6.5.9",
+    "mobx-react": "^7.5.2",
     "prettier": "^2.7.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

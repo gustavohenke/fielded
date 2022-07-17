@@ -5,6 +5,7 @@
   "version": "0.0.0",
   "main": "index.js",
   "scripts": {
+    "build": "tsc -p .",
     "test": "vitest",
     "storybook:start": "start-storybook -p 6006",
     "storybook:build": "build-storybook"

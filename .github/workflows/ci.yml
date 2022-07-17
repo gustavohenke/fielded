@@ -10,4 +10,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - run: ls -l && echo "Hello world"
+      - uses: actions/setup-node@v2
+        with:
+          node-version: 14.x
+          cache: npm
+      - run: npm install
+      - run: npm run build

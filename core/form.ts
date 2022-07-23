@@ -1,4 +1,4 @@
-import { action, makeObservable, observable } from "mobx";
+import { action, computed, makeObservable, observable } from "mobx";
 import { Field } from "./field";
 
 /**
@@ -32,6 +32,26 @@ export class Form<T extends FormDataMap> {
    */
   readonly fields: T;
 
+  /**
+   * Observable, first validation error from any of the nested forms/fields.
+   */
+  @computed
+  get error(): string | undefined {
+    for (const field of Object.values(this.fields)) {
+      if (field.error) {
+        return field.error;
+      }
+    }
+  }
+
+  /**
+   * Whether the form is valid.
+   */
+  @computed
+  get valid() {
+    return this.error == null;
+  }
+
   constructor(fields: T) {
     this.fields = fields;
   }
@@ -58,6 +78,26 @@ export class FormArray<T extends Form<any>> {
    */
   @observable.shallow
   readonly rows: T[];
+
+  /**
+   * Observable, first validation error from any of nested the forms/fields.
+   */
+  @computed
+  get error(): string | undefined {
+    for (const row of this.rows) {
+      if (row.error) {
+        return row.error;
+      }
+    }
+  }
+
+  /**
+   * Whether the form list is valid.
+   */
+  @computed
+  get valid() {
+    return this.error == null;
+  }
 
   constructor(rows: T[] = []) {
     makeObservable(this);

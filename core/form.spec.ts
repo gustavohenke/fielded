@@ -3,6 +3,34 @@ import { Field } from "./field";
 import { Form, FormArray } from "./form";
 
 describe("Form", () => {
+  describe("#error", () => {
+    it("is the first validation error from a field", () => {
+      const form = new Form({
+        fruit: Field.text().addValidators(() => "Required"),
+        color: Field.text().addValidators(() => "Nope"),
+      });
+      expect(form.error).toBe("Required");
+    });
+
+    it("is the first validation error from a nested form", () => {
+      const form = new Form({
+        fruit: Field.text().addValidators(() => void 0),
+        nutrition: new Form({
+          energy: Field.number().addValidators(() => "Required"),
+        }),
+      });
+      expect(form.error).toBe("Required");
+    });
+
+    it("is the first validation error from a nested list of forms", () => {
+      const form = new Form({
+        protein: Field.text().addValidators(() => void 0),
+        recipes: new FormArray([new Form({ name: Field.text().addValidators(() => "Required") })]),
+      });
+      expect(form.error).toBe("Required");
+    });
+  });
+
   describe("#snapshot()", () => {
     it("returns the value of each field", () => {
       const form = new Form({
@@ -53,6 +81,15 @@ describe("Form", () => {
 });
 
 describe("FormArray", () => {
+  describe("#error", () => {
+    it("is the first validation error from a nested list of forms", () => {
+      const array = new FormArray([
+        new Form({ name: Field.text().addValidators(() => "Required") }),
+      ]);
+      expect(array.error).toBe("Required");
+    });
+  });
+
   describe("#add()", () => {
     it("adds one or more rows", () => {
       const array = new FormArray<Form<{}>>();

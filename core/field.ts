@@ -39,7 +39,7 @@ export class Field<Value extends FieldValue> {
   value: Value | undefined;
 
   /**
-   * Observable error of the field, if any.
+   * Observable validation error of the field, if any.
    */
   @computed
   get error(): string | undefined {

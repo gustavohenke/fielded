@@ -59,7 +59,7 @@ export class FormArray<T extends Form<any>> {
   @observable.shallow
   readonly rows: T[];
 
-  constructor(rows: T[]) {
+  constructor(rows: T[] = []) {
     makeObservable(this);
     this.rows = rows;
   }

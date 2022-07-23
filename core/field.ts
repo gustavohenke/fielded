@@ -1,4 +1,4 @@
-import { action, makeObservable, observable } from "mobx";
+import { action, computed, makeObservable, observable } from "mobx";
 
 /**
  * A union of all supported types for field values.
@@ -17,8 +17,15 @@ type FieldOptions<Value extends FieldValue> = {
   initialValue?: Value | null;
 };
 
+/**
+ * A validator function which receives the value of a field, and must return an error message,
+ * or undefined, if the field is valid.
+ */
+type FieldValidator<Value extends FieldValue> = (value: Value | undefined) => string | undefined;
+
 export class Field<Value extends FieldValue> {
   private readonly options?: FieldOptions<Value>;
+  private readonly validators: FieldValidator<Value>[] = [];
 
   /**
    * The type of the field.
@@ -30,6 +37,27 @@ export class Field<Value extends FieldValue> {
    */
   @observable.ref
   value: Value | undefined;
+
+  /**
+   * Observable error of the field, if any.
+   */
+  @computed
+  get error(): string | undefined {
+    for (const validator of this.validators) {
+      const error = validator(this.value);
+      if (error) {
+        return error;
+      }
+    }
+  }
+
+  /**
+   * Whether the field is valid.
+   */
+  @computed
+  get valid(): boolean {
+    return this.error == null;
+  }
 
   private constructor(type: FieldType<Value>, options?: FieldOptions<Value>) {
     makeObservable(this);
@@ -54,10 +82,21 @@ export class Field<Value extends FieldValue> {
 
   /**
    * Updates the underlying value of the field.
+   * @returns self, for chaining
    */
   @action
-  set(value: Value | undefined): void {
+  set(value: Value | undefined): this {
     this.value = value;
+    return this;
+  }
+
+  /**
+   * Add one or more validators to this field.
+   * @returns self, for chaining
+   */
+  addValidators(...validators: FieldValidator<Value>[]): this {
+    this.validators.push(...validators);
+    return this;
   }
 
   /**

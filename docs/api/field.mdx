@@ -1,0 +1,105 @@
+# Field
+
+A field is the most basic building block of fielded.
+It's where data is usually input by the user, and ultimately, where it's stored.
+
+## Instantiating a `Field`
+
+There are some ways of creating a field. Each of the following methods creates an instance
+of `Field` that is bound to a specific type.
+
+### `Field.text(initialValue)`
+
+Creates a text field, optionally taking an initial value. Returns a `Field<string>`.
+
+### `Field.number(initialValue)`
+
+Creates a number field, optionally taking an initial value. Returns a `Field<number>`.
+
+## Properties
+
+### `.type`
+
+What the underlying type of the field is.
+Either `text` or `number`.
+
+### `.value`
+
+Observable value of the field (if any).
+
+```ts
+const nameField = Field.text("John Doe");
+
+console.log(nameField.value); // prints "John Doe"
+```
+
+### `.valid`
+
+`true` if the field value is currently valid, `false` otherwise.
+
+### `.error`
+
+Observable validation error of the field, if any.
+
+See also [`addValidators()`](#addvalidatorsvalidators)
+
+## Methods
+
+### `.set(value)`
+
+Updates the value of the field to be `value`. Returns the field itself, useful for chaining.
+
+```ts
+const value = Field.number().set(42).value;
+console.log(value); // prints 42
+```
+
+### `.addValidators(...validators)`
+
+Adds one or more validators.<br />
+A validator is a function which takes the current field value, and may return an error string which
+becomes the field's error.
+
+```ts
+function validateRequired(value: string | undefined) {
+  if (!value) {
+    return "Please type a value.";
+  }
+}
+
+function validateWeekDay(value: string | undefined) {
+  if (value === "saturday" || value === "sunday") {
+    return "Please choose a week day.";
+  }
+}
+
+const day = Field.text("sunday").addValidators(validateRequired, validateWeekDay);
+console.log(day.error); // prints "Please choose a week day."
+```
+
+:::info
+
+Asynchronous validation is not yet supported.
+
+:::
+
+### `.getReactProps()`
+
+Builds and returns a bag of observable React props, useful for rendering an input that represents
+this field.
+
+The props that are returned are:
+
+- `type`: the [HTML input type](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input#input_types)
+  best suited to this field, as per its own type;
+- `value`: the current field value, or an empty string, if there's none;
+- `onChange`: a change event handler which updates the `Field` instance with the input values,
+  casting them to match the field's internal type.
+
+```tsx
+import { observer } from "mobx-react";
+
+const SomeComponent = observer(({ field }: { field: Field<any> }) => {
+  return <input {...field.getReactProps()} />;
+});
+```

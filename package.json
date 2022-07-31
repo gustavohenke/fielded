@@ -3,6 +3,7 @@
   "description": "Bring your forms into your business logic layer.",
   "repository": "gustavohenke/fielded",
   "version": "0.0.1",
+  "homepage": "https://gustavohenke.github.io/fielded/",
   "main": "dist/core/index.js",
   "scripts": {
     "build": "tsc -p .",
@@ -26,6 +27,7 @@
     "vitest": "^0.18.0"
   },
   "files": [
+    "docs",
     "dist/core"
   ]
 }

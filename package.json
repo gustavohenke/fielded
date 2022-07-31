@@ -6,6 +6,9 @@
   "main": "dist/core/index.js",
   "scripts": {
     "build": "tsc -p .",
+    "docs:build": "npm --prefix ./website run build",
+    "docs:deploy": "npm --prefix ./website run deploy",
+    "docs:start": "npm --prefix ./website start",
     "prepublishOnly": "npm run build",
     "test": "vitest"
   },

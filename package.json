@@ -28,6 +28,8 @@
   },
   "files": [
     "docs",
-    "dist/core"
+    "dist",
+    "!**/*.spec.js",
+    "!**/*.spec.d.ts"
   ]
 }

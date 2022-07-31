@@ -7,15 +7,12 @@
   "scripts": {
     "build": "tsc -p .",
     "prepublishOnly": "npm run build",
-    "test": "vitest",
-    "storybook:start": "start-storybook -p 6006",
-    "storybook:build": "build-storybook"
+    "test": "vitest"
   },
   "dependencies": {
     "mobx": "^6.6.1"
   },
   "devDependencies": {
-    "@storybook/react": "^6.5.9",
     "mobx-react": "^7.5.2",
     "prettier": "^2.7.1",
     "react": "^18.2.0",

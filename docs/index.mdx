@@ -1,0 +1,72 @@
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+# Getting Started
+
+fielded is a library for managing form state on the web or Node.js.
+Its main features are
+
+- **Strongly typed with TypeScript**.<br/>
+  All properties are statically referenced.
+  There are no fragile strings that you need to remember to update when doing refactors like in
+  similar form state libraries.
+- **Independent of UI**.<br/>
+  fielded may be used with React, plain HTML, or even in a Node.js server! This makes your forms
+  testable, decoupled and portable.
+- **Simple semantics**.<br/>
+  Since fielded's constructs are plain JavaScript classes and functions, it's easy to test validation
+  behaviours, or even extend it to generate UI from the form state.
+
+## Prerequisites
+
+fielded is _currently_ powered by [MobX](https://mobx.js.org/), a reactivity-based state management library.<br/>
+You'll need to install it and observe fielded's state using its APIs (e.g. computeds, observers) to be notified of changes.
+
+:::note
+
+This dependency will soon be removed to support applications that don't use it.
+
+:::
+
+## Installation
+
+You can get fielded by using your favourite package manager:
+
+<Tabs>
+  <TabItem value="npm">
+
+    npm install fielded
+
+  </TabItem>
+  <TabItem value="yarn">
+
+    yarn add fielded
+
+  </TabItem>
+</Tabs>
+
+## Example
+
+As mentioned above, fielded makes use of pure JavaScript, powered by MobX observers.
+The following example demonstrates how to update the form state and track its changes:
+
+```js
+import { Form, FormArray, Field } from "fielded";
+import { autorun } from "mobx";
+
+const form = new Form({
+  name: Field.text("John Doe"),
+  age: Field.number(),
+  pets: new FormArray([new Form({ name: Field.text("Rex") })]),
+});
+
+autorun(() => {
+  console.log(form.snapshot());
+});
+// logs { name: 'John Doe', pets: [{ name: 'Rex' }] }
+
+form.fields.age.set(30);
+// logs { name: 'John Doe', age: 30, pets: [{ name: 'Rex' }] }
+```
+
+Now, let's understand how to use fielded's APIs to build your form state.

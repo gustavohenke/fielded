@@ -6,20 +6,22 @@
   "main": "dist/core/index.js",
   "scripts": {
     "build": "tsc -p .",
+    "docs:build": "npm --prefix ./website run build",
+    "docs:deploy": "npm --prefix ./website run deploy",
+    "docs:start": "npm --prefix ./website start",
     "prepublishOnly": "npm run build",
-    "test": "vitest",
-    "storybook:start": "start-storybook -p 6006",
-    "storybook:build": "build-storybook"
+    "test": "vitest"
   },
   "dependencies": {
     "mobx": "^6.6.1"
   },
   "devDependencies": {
-    "@storybook/react": "^6.5.9",
+    "@docusaurus/core": "^2.0.0-rc.1",
+    "@docusaurus/preset-classic": "^2.0.0-rc.1",
     "mobx-react": "^7.5.2",
     "prettier": "^2.7.1",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2",
     "typescript": "^4.7.4",
     "vitest": "^0.18.0"
   },

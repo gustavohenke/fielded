@@ -1,0 +1,111 @@
+# FormArray
+
+A form array is a list of zero or more instances of the same form type.
+
+For example, a list of your pets may look like the following:
+
+```ts
+class PetForm extends Form<{ name: Field<string>; animal: Field<string> }> {
+  constructor(name?: string, animal?: string) {
+    super({ name: Field.text(name), animal: Field.text(animal) });
+  }
+}
+
+const pets = new FormArray<PetForm>();
+```
+
+## `constructor(rows)`
+
+Instantiates a new form array, optionally passing a list of `rows` to add as initial values.
+
+```ts
+const pets: FormArray<PetForm> = new FormArray([
+  new PetForm("Buddy", "dog"),
+  new PetForm("Zoe", "cat"),
+]);
+```
+
+## Properties
+
+### `.rows`
+
+List of forms which this form array is currently comprised of.
+
+```ts
+const pets = new FormArray([new PetForm("Buddy")]);
+console.log(pets.rows[0].fields.name.value); // prints "Buddy"
+```
+
+### `.valid`
+
+`true` if all of the nested forms and their fields are valid, `false` otherwise.
+
+### `.error`
+
+Observable validation error of the first field that is invalid, if any.
+
+```ts
+class PetForm extends Form<{ name: Field<string> }> {
+  constructor(name?: string) {
+    super({
+      name: Field.text(name).addValidators((value) => {
+        if (!value) {
+          return "Please type a name";
+        }
+      }),
+    });
+  }
+}
+
+const characters = new FormArray([new PetForm("Buddy"), new PetForm()]);
+
+console.log(form.error); // prints "Please type a name"
+```
+
+## Methods
+
+### `.add(rows)`
+
+Adds one or more rows to the list. Returns the `FormArray` instance, useful for chaining.
+
+```ts
+const pets = new FormArray<PetForm>();
+pets.add(new PetForm("Zoe"));
+console.log(pets.rows[0].fields.name.value); // prints "Zoe"
+```
+
+### `.remove(index)`
+
+Removes a row from the list by its index. Returns the `FormArray` instance, useful for chaining.
+
+```ts
+const pets = new FormArray([new PetForm("Buddy"), new PetForm("Zoe")]);
+pets.remove(1);
+console.log(pets.rows.length); // prints 1
+console.log(pets.rows[0].fields.name.value); // prints "Buddy"
+```
+
+### `.remove(row)`
+
+Removes a row from the list by its reference. Returns the `FormArray` instance, useful for chaining.
+
+```ts
+const cat = new PetForm("Zoe");
+const pets = new FormArray([cat]);
+pets.remove(cat);
+console.log(pets.rows.length); // prints 0
+```
+
+### `.snapshot()`
+
+Recursively snapshots the current state of the form and returns it as a plain JavaScript array.
+
+```ts
+const characters = new FormArray([
+  new Form({ name: Field.text("Homer"), show: Field.text("The Simpsons") }),
+  new Form({ name: Field.text(""), show: Field.text() }),
+]);
+
+console.log(characters.snapshot());
+// prints [{ name: "Homer", show: "The Simpsons" }, { name: "" }]
+```

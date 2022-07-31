@@ -1,0 +1,78 @@
+# Form
+
+A form is a composition of one or more fields.
+A form may even contain other nested forms inside it.
+
+## `constructor(fields)`
+
+Instantiates a new form. `fields` must be an object which is comprised of [`Field`](./field) or [`FormArray`](./form-array) instances.
+
+```ts
+const form = new Form({
+  name: Field.text(),
+  age: Field.number(),
+  job: new Form({
+    companyName: Field.text(),
+    role: Field.text(),
+  }),
+});
+```
+
+## Properties
+
+### `.fields`
+
+Map of fields that this form is composed of.
+
+```ts
+const form = new Form({
+  name: Field.text("John Doe"),
+  age: Field.number(),
+});
+
+console.log(form.fields.name.value); // prints "John Doe"
+```
+
+### `.valid`
+
+`true` if all of the form's fields and nested forms are valid, `false` otherwise.
+
+### `.error`
+
+Observable validation error of the first field that is invalid, if any.
+
+```ts
+function makeRequiredValidator(errorMsg: string) {
+  return (value: any) => {
+    if (!value) {
+      return errorMsg;
+    }
+  };
+}
+
+const form = new Form({
+  name: Field.text("John Doe").addValidators(makeRequiredValidator("Please type your name")),
+  age: Field.number().addValidators(makeRequiredValidator("Please type your age")),
+});
+
+console.log(form.error); // prints "Please type your age"
+```
+
+## Methods
+
+### `.snapshot()`
+
+Recursively snapshots the current state of the form and returns it as a plain JavaScript object.
+
+```ts
+const form = new Form({
+  name: Field.text("John Doe"),
+  hobbies: new FormArray([
+    new Form({ description: Field.text("photography") }),
+    new Form({ description: Field.text() }),
+  ]),
+});
+
+console.log(form.snapshot());
+// prints { name: "John Doe", hobbies: [{ description: "photography" }, {}] }
+```

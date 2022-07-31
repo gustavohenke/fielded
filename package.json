@@ -13,6 +13,8 @@
     "mobx": "^6.6.1"
   },
   "devDependencies": {
+    "@docusaurus/core": "^2.0.0-rc.1",
+    "@docusaurus/preset-classic": "^2.0.0-rc.1",
     "mobx-react": "^7.5.2",
     "prettier": "^2.7.1",
     "react": "^17.0.2",

@@ -3,6 +3,7 @@
   "description": "Bring your forms into your business logic layer.",
   "repository": "gustavohenke/fielded",
   "version": "0.1.0",
+  "license": "MIT",
   "homepage": "https://gustavohenke.github.io/fielded/",
   "main": "dist/core/index.js",
   "scripts": {

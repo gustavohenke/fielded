@@ -23,7 +23,7 @@ type FieldOptions<Value extends FieldValue> = {
  */
 type FieldValidator<Value extends FieldValue> = (value: Value | undefined) => string | undefined;
 
-export class Field<Value extends FieldValue> {
+export abstract class Field<Value extends FieldValue> {
   private readonly options?: FieldOptions<Value>;
   private readonly validators: FieldValidator<Value>[] = [];
 
@@ -59,7 +59,7 @@ export class Field<Value extends FieldValue> {
     return this.error == null;
   }
 
-  private constructor(type: FieldType<Value>, options?: FieldOptions<Value>) {
+  protected constructor(type: FieldType<Value>, options?: FieldOptions<Value>) {
     makeObservable(this);
     this.type = type;
     this.options = options;
@@ -69,15 +69,15 @@ export class Field<Value extends FieldValue> {
   /**
    * Creates a field instance which has a number type.
    */
-  static number(initialValue?: number | null) {
-    return new Field("number", { initialValue });
+  static number(initialValue?: number | null): Field<number> {
+    return new NumberField({ initialValue });
   }
 
   /**
    * Creates a field instance which has a text type.
    */
-  static text(initialValue?: string | null) {
-    return new Field("text", { initialValue });
+  static text(initialValue?: string | null): Field<string> {
+    return new TextField({ initialValue });
   }
 
   /**
@@ -114,36 +114,37 @@ export class Field<Value extends FieldValue> {
       // Default to empty string to avoid React complaining that an input
       // has changed from uncontrolled to controlled.
       value: value ?? "",
-      onChange: makeChangeCallback(this),
+      onChange: (evt) => this.onDOMChange(evt),
     };
+  }
+
+  /**
+   * Callback for when a DOM ChangeEvent happens.
+   */
+  protected abstract onDOMChange(evt: ChangeEvent): void;
+}
+
+class NumberField extends Field<number> {
+  constructor(options?: FieldOptions<number>) {
+    super("number", options);
+  }
+
+  protected onDOMChange(evt: ChangeEvent): void {
+    const value = Number(evt.target.value);
+    this.set(isNaN(value) ? undefined : value);
   }
 }
 
-/**
- * Guard for verifying that a number is actually a number field.
- */
-function isNumberField(field: Field<any>): field is Field<number> {
-  return field.type === "number";
-}
+class TextField extends Field<string> {
+  constructor(options?: FieldOptions<string>) {
+    super("text", options);
+  }
 
-/**
- * Guard for verifying that a number is actually a text field.
- */
-function isTextField(field: Field<any>): field is Field<string> {
-  return field.type === "text";
+  protected onDOMChange(evt: ChangeEvent): void {
+    this.set(evt.target.value);
+  }
 }
 
 type ChangeEvent = {
   target: HTMLInputElement | HTMLTextAreaElement;
 };
-function makeChangeCallback<T extends Field<any>>(field: T): (evt: ChangeEvent) => void {
-  return (evt) => {
-    if (isNumberField(field)) {
-      const value = Number(evt.target.value);
-      return field.set(isNaN(value) ? undefined : value);
-    }
-    if (isTextField(field)) {
-      return field.set(evt.target.value);
-    }
-  };
-}

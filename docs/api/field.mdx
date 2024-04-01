@@ -33,21 +33,27 @@ const nameField = Field.text("John Doe");
 console.log(nameField.value); // prints "John Doe"
 ```
 
-### `.valid`
+### `.validation`
 
-`true` if the field value is currently valid, `false` otherwise.
+A [`Validation`](./validation.mdx) object representing the field's state of validation.
+Undefined unless the field value has been set before.
+
+### `.errors`
+
+Observable list of validation errors of the field.
+Shorthand for `field.validation.errors`.
 
 ### `.error`
 
 Observable validation error of the field, if any.
-
-See also [`addValidators()`](#addvalidatorsvalidators)
+Shorthand for `field.validation.errors[0]`.
 
 ## Methods
 
 ### `.set(value)`
 
-Updates the value of the field to be `value`. Returns the field itself, useful for chaining.
+Updates the value of the field to be `value`, and validates it.
+Returns the field itself, useful for chaining.
 
 ```ts
 const value = Field.number().set(42).value;
@@ -57,31 +63,26 @@ console.log(value); // prints 42
 ### `.addValidators(...validators)`
 
 Adds one or more validators.<br />
-A validator is a function which takes the current field value, and may return an error string which
-becomes the field's error.
+A validator is a function which takes the current field value and throws an error, or returns a promise
+that rejects, if the value is invalid.
 
 ```ts
 function validateRequired(value: string | undefined) {
   if (!value) {
-    return "Please type a value.";
+    throw new Error("Please type a value.");
   }
 }
 
 function validateWeekDay(value: string | undefined) {
   if (value === "saturday" || value === "sunday") {
-    return "Please choose a week day.";
+    throw new Error("Please choose a week day.");
   }
 }
 
-const day = Field.text("sunday").addValidators(validateRequired, validateWeekDay);
-console.log(day.error); // prints "Please choose a week day."
+const day = Field.text().addValidators(validateRequired, validateWeekDay);
+day.set("sunday");
+console.log(day.error); // "Please choose a week day."
 ```
-
-:::info
-
-Asynchronous validation is not yet supported.
-
-:::
 
 ### `.getReactProps()`
 

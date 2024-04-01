@@ -1,0 +1,145 @@
+---
+toc_max_heading_level: 4
+---
+
+# Validation
+
+This page has information about the validation-related APIs of fielded.
+
+## `Validation`
+
+A `Validation` object represents the state of validation for a field.
+
+`Validation` objects are automatically created from a [field's validators](./field.mdx#addvalidatorsvalidators)
+when the field value is updated.
+The validation state can be accessed through the [`Field.validation` property](./field.mdx#validation).
+
+A validation calls its validators in sequence, stopping at the first one that throws an error
+or returns a promise that rejects. The error is converted using [`ValidationError.from()`](#frome).
+
+```ts
+const username = Field.text()
+  .addValidators(value => {
+    if (value.length < 3) {
+      throw new Error('Must have at least 3 characters');
+    }
+  }, value => {
+    if (reservedUsernames.includes(value)) {
+      throw new Error('Not available');
+    }
+  });
+
+username.set('a');
+console.log(username.validation.errors); // ['Must have at least 3 characters']
+
+username.set('some_reserved_name');
+console.log(username.validation.errors); // ['Not available']
+```
+
+If a validator throws a `ValidationError` whose [`bail` property](#bail) is set to `false`,
+then that validator _will not_ stop the validation, and the next validator runs normally.
+
+```ts
+const imageUrl = Field.text()
+  .addValidators(value => {
+    if (!value.startsWith('https')) {
+      throw new ValidationError('Must be an HTTPS URL', { bail: false });
+    }
+  }, value => {
+    if (!value.endsWith('.png')) {
+      throw new Error('Must be a PNG image');
+    }
+  });
+
+imageUrl.set('example.com/avatar.jpg');
+console.log(username.validation.errors); // ['Must be an HTTPS URL', 'Must be a PNG image']
+```
+
+### Properties
+
+#### `.state`
+
+The current state of the validation. Can be one of
+
+- `pending`: if the validation is not complete yet;
+- `valid`: if the validation is complete, and the value is valid;
+- `invalid`: if the validation is completed, and there are errors.
+
+#### `.errors`
+
+An observable list of [`ValidationError`](#validationerror)s for the last validated value.
+
+#### `.hasError`
+
+Whether there's any error in the validation state.
+Shorthand for `validation.errors.length > 0`.
+
+#### `.value`
+
+The valid value of the field. Only set when [`state`](#state) is `valid`.
+
+```ts
+const age = Field.number().addValidators(value => {
+  if (value < 18) {
+    throw new Error('Must be an adult');
+  }
+});
+
+age.set(17);
+if (age.validation.state === 'valid') {
+  console.log(`Your age is ${age.validation.value}`);
+}
+```
+
+### Methods
+
+#### `.validate(value)`
+
+Triggers a validation on the passed value, and returns a promise for when the validation has finished.
+
+Manually calling this method will reset the validation state and rerun every validator.
+
+## `ValidationError`
+
+The `ValidationError` represents an error thrown when a validator found a value to be invalid.
+It can be manually instantiated by validators (by calling `new ValidationError()`), or mapped from
+any other value by using the static method `ValidationError.from()`.
+
+### `constructor(message, opts)`
+
+Creates a new `ValidationError` with the given message and options.
+
+`opts` is an object which can have the following properties:
+
+- `bail`: See [`bail`](#bail). Defaults to `true`.
+- `cause`: the source error for the new validation error. You might want to set this when wrapping
+  another error.<br/>
+  For example, if your validator throws some unexpected error, you might want to wrap it:
+
+  ```ts
+  const username = Field.text().addValidators(async value => {
+    const available = await service.isAvailable(value).catch(e => {
+      throw new ValidationError('Something went wrong', { cause: e });
+    });
+    if (!available) {
+      throw new Error('Not available');
+    }
+  });
+  ```
+
+  See [`Error: cause` on MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error/cause) for more information.
+
+### Static Methods
+
+#### `.from(e)`
+
+Converts any value to `ValidationError`.
+
+- If `e` is an instance of `ValidationError`, then it's returned.
+- If `e` is an instance of `Error`, then the `ValidationError` is created using that error's message.
+  It's also set as the cause of the validation error.
+- Otherwise, `e` is converted to a string and set as the error's message and cause.
+
+### Properties
+#### `.bail`
+Whether the validation should be stopped when hitting this error.

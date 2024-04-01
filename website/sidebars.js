@@ -5,7 +5,7 @@ const sidebars = {
     {
       type: "category",
       label: "API",
-      items: ["api/field", "api/form", "api/form-array"],
+      items: ["api/field", "api/form", "api/form-array", "api/validation"],
     },
   ],
 };

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { Field } from "./field";
+import { when } from "mobx";
 
 describe("Field", () => {
   describe("#set()", () => {
@@ -10,34 +11,43 @@ describe("Field", () => {
       field.set(1);
       expect(field.value).toBe(1);
     });
+
+    it("triggers validation", async () => {
+      const field = Field.text().addValidators(() => Promise.reject("nope"));
+      field.set("foo");
+      expect(field.validation!.state).toBe("pending");
+
+      await when(() => field.validation!.state !== "pending");
+    });
+  });
+
+  describe("#validation", () => {
+    it("is unset until value is set", () => {
+      const field = Field.text().addValidators(() => Promise.reject("nope"));
+      expect(field.validation).toBeUndefined();
+
+      field.set("foo");
+      expect(field.validation).not.toBeUndefined();
+    });
+  });
+
+  describe("#errors", () => {
+    it("is empty when the field has not been validated", async () => {
+      const field = Field.text().addValidators(() => Promise.reject("nope"));
+      expect(field.errors).toHaveLength(0);
+
+      field.set("foo");
+      await when(() => field.errors.length > 0);
+    });
   });
 
   describe("#error", () => {
-    it("is the return value of a validator", () => {
-      const field = Field.text().addValidators(() => "nope");
-      expect(field.error).toBe("nope");
-    });
+    it("is unset until the field is set", async () => {
+      const field = Field.text().addValidators(() => Promise.reject("nope"));
+      expect(field.error).toBeUndefined();
 
-    it("calls each validator with the current field value", () => {
-      const validators = [vi.fn(), vi.fn()];
-      const field = Field.text()
-        .addValidators(...validators)
-        .set("foo");
-      field.error;
-      expect(validators[0]).toHaveBeenCalledWith("foo");
-      expect(validators[1]).toHaveBeenCalledWith("foo");
-    });
-  });
-
-  describe("#valid", () => {
-    it("is true if there is no error", () => {
-      const field = Field.text();
-      expect(field.valid).toBe(true);
-    });
-
-    it("is false if there is an error", () => {
-      const field = Field.text().addValidators(() => "nope");
-      expect(field.valid).toBe(false);
+      field.set("foo");
+      await when(() => !!field.error);
     });
   });
 });

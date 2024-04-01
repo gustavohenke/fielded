@@ -1,4 +1,5 @@
 import { action, computed, makeObservable, observable } from "mobx";
+import { Validation, ValidationError, Validator, createValidation } from "./validation";
 
 /**
  * A union of all supported types for field values.
@@ -25,7 +26,7 @@ type FieldValidator<Value extends FieldValue> = (value: Value | undefined) => st
 
 export abstract class Field<Value extends FieldValue> {
   private readonly options?: FieldOptions<Value>;
-  private readonly validators: FieldValidator<Value>[] = [];
+  private readonly validators: Validator<Value>[] = [];
 
   /**
    * The type of the field.
@@ -38,25 +39,21 @@ export abstract class Field<Value extends FieldValue> {
   @observable.ref
   value: Value | undefined;
 
+  @observable.ref
+  validation?: Validation<Value, Value | undefined>;
+
   /**
-   * Observable validation error of the field, if any.
+   * The first validation error of the field, if any.
    */
-  @computed
-  get error(): string | undefined {
-    for (const validator of this.validators) {
-      const error = validator(this.value);
-      if (error) {
-        return error;
-      }
-    }
+  get error(): ValidationError | undefined {
+    return this.errors.at(0);
   }
 
   /**
-   * Whether the field is valid.
+   * Observable list of validation errors of the field.
    */
-  @computed
-  get valid(): boolean {
-    return this.error == null;
+  get errors(): readonly ValidationError[] {
+    return this.validation?.errors || [];
   }
 
   protected constructor(type: FieldType<Value>, options?: FieldOptions<Value>) {
@@ -87,6 +84,8 @@ export abstract class Field<Value extends FieldValue> {
   @action
   set(value: Value | undefined): this {
     this.value = value;
+    this.validation = createValidation(this.validators);
+    this.validation.validate(value);
     return this;
   }
 
@@ -94,7 +93,7 @@ export abstract class Field<Value extends FieldValue> {
    * Add one or more validators to this field.
    * @returns self, for chaining
    */
-  addValidators(...validators: FieldValidator<Value>[]): this {
+  addValidators(...validators: Validator<Value>[]): this {
     this.validators.push(...validators);
     return this;
   }

@@ -1,33 +1,49 @@
 import { describe, expect, it } from "vitest";
 import { Field } from "./field";
 import { Form, FormArray } from "./form";
+import { ValidationError } from "./validation";
+
+const throwWith = (error: string) => () => {
+  throw new Error(error);
+};
 
 describe("Form", () => {
   describe("#error", () => {
     it("is the first validation error from a field", () => {
       const form = new Form({
-        fruit: Field.text().addValidators(() => "Required"),
-        color: Field.text().addValidators(() => "Nope"),
+        fruit: Field.text().addValidators(throwWith("Required")),
+        color: Field.text().addValidators(throwWith("Nope")),
       });
-      expect(form.error).toBe("Required");
+      form.fields.color.set("red");
+      form.fields.fruit.set("apple");
+
+      expect(form.error).toEqual(new ValidationError("Required"));
     });
 
     it("is the first validation error from a nested form", () => {
       const form = new Form({
         fruit: Field.text().addValidators(() => void 0),
         nutrition: new Form({
-          energy: Field.number().addValidators(() => "Required"),
+          energy: Field.number().addValidators(throwWith("Required")),
         }),
       });
-      expect(form.error).toBe("Required");
+      form.fields.fruit.set("apple");
+      form.fields.nutrition.fields.energy.set(undefined);
+
+      expect(form.error).toEqual(new ValidationError("Required"));
     });
 
     it("is the first validation error from a nested list of forms", () => {
       const form = new Form({
         protein: Field.text().addValidators(() => void 0),
-        recipes: new FormArray([new Form({ name: Field.text().addValidators(() => "Required") })]),
+        recipes: new FormArray([
+          new Form({ name: Field.text().addValidators(throwWith("Required")) }),
+        ]),
       });
-      expect(form.error).toBe("Required");
+      form.fields.protein.set(undefined);
+      form.fields.recipes.rows[0].fields.name.set(undefined);
+
+      expect(form.error).toEqual(new ValidationError("Required"));
     });
   });
 
@@ -84,9 +100,12 @@ describe("FormArray", () => {
   describe("#error", () => {
     it("is the first validation error from a nested list of forms", () => {
       const array = new FormArray([
-        new Form({ name: Field.text().addValidators(() => "Required") }),
+        new Form({
+          name: Field.text().addValidators(throwWith("Required")),
+        }),
       ]);
-      expect(array.error).toBe("Required");
+      array.rows[0].fields.name.set("");
+      expect(array.error).toEqual(new ValidationError("Required"));
     });
   });
 

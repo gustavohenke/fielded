@@ -1,5 +1,6 @@
 import { action, computed, makeObservable, observable } from "mobx";
 import { Field } from "./field";
+import { ValidationError } from "./validation";
 
 /**
  * A map from field name to its state, in the form of either `Field`, `Form` or `FormArray`.
@@ -35,13 +36,16 @@ export class Form<T extends FormDataMap> {
   /**
    * Observable, first validation error from any of the nested forms/fields.
    */
+  get error(): ValidationError | undefined {
+    return this.errors[0];
+  }
+
+  /**
+   * Observable list of validation errors from any of the nested forms/fields.
+   */
   @computed
-  get error(): string | undefined {
-    for (const field of Object.values(this.fields)) {
-      if (field.error) {
-        return field.error;
-      }
-    }
+  get errors(): readonly ValidationError[] {
+    return Object.values(this.fields).flatMap((field) => field.errors);
   }
 
   /**
@@ -82,13 +86,16 @@ export class FormArray<T extends Form<any>> {
   /**
    * Observable, first validation error from any of nested the forms/fields.
    */
+  get error(): ValidationError | undefined {
+    return this.errors[0];
+  }
+
+  /**
+   * Observable list of validation errors from all of the nested the forms/fields.
+   */
   @computed
-  get error(): string | undefined {
-    for (const row of this.rows) {
-      if (row.error) {
-        return row.error;
-      }
-    }
+  get errors(): readonly ValidationError[] {
+    return Object.values(this.rows).flatMap((row) => row.errors);
   }
 
   /**

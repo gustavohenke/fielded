@@ -31,7 +31,7 @@ describe("createValidation()", () => {
     it("runs validators until a bail error is thrown", async () => {
       const v1 = vi.fn();
       const v2 = vi.fn(() => {
-        throw new ValidationError("fail", true);
+        throw new ValidationError("fail", { bail: true });
       });
       const v3 = vi.fn();
       const validation = createValidation(v1, v2, v3);
@@ -97,30 +97,17 @@ describe("createValidation()", () => {
         expect(validation.errors).toHaveLength(1);
       });
 
-      it("adds errors as they are when they are ValidationError", async () => {
-        const err = new ValidationError("invalid");
+      it("adds errors as mapped from ValidationError", async () => {
+        const err = new ValidationError("foo");
+        const fromSpy = vi.spyOn(ValidationError, "from").mockReturnValue(err);
+
         const validation = createValidation(async () => {
-          throw err;
+          throw "nope";
         });
         await validation.validate("foo");
         expect(validation.errors).toContain(err);
-      });
 
-      it("converts errors to ValidationError, and sets cause", async () => {
-        const err = new Error("invalid");
-        const validation = createValidation(async () => {
-          throw err;
-        });
-        await validation.validate("foo");
-        expect(validation.errors).toContainEqual(new ValidationError(err.message, false, err));
-      });
-
-      it("converts non-errors to ValidationError, and sets cause", async () => {
-        const validation = createValidation(async () => {
-          throw "invalid";
-        });
-        await validation.validate("foo");
-        expect(validation.errors).toContainEqual(new ValidationError("invalid", false, "invalid"));
+        fromSpy.mockRestore();
       });
 
       it("updates observable state", async () => {
@@ -161,6 +148,31 @@ describe("createValidation()", () => {
       validation.validate(1);
       expect(validation.hasError).toBe(false);
       await when(() => validation.hasError);
+    });
+  });
+});
+
+describe("ValidationError", () => {
+  describe(".from()", () => {
+    it("returns ValidationErrors as is", () => {
+      const err = new ValidationError("error");
+      expect(ValidationError.from(err)).toBe(err);
+    });
+
+    it("converts other errors", async () => {
+      const base = new Error("invalid");
+      const err = ValidationError.from(base);
+      expect(err.cause).toBe(base);
+      expect(err.bail).toBe(true);
+      expect(err.message).toBe(err.message);
+    });
+
+    it("converts non-errors", async () => {
+      const base = "invalid";
+      const err = ValidationError.from(base);
+      expect(err.cause).toBe(base);
+      expect(err.bail).toBe(true);
+      expect(err.message).toBe(err.message);
     });
   });
 });

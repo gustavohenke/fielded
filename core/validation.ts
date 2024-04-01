@@ -29,7 +29,7 @@ type ValidationState<Value> = {
 export type Validation<Value, InvalidValue = Value> = ValidationState<Value> & {
   /**
    * Whether this validation produced any errors.
-   * Shortcut for `errors.length > 0`.
+   * Shorthand for `errors.length > 0`.
    */
   readonly hasError: boolean;
 
@@ -47,15 +47,34 @@ export type Validation<Value, InvalidValue = Value> = ValidationState<Value> & {
 export type Validator<T> = (value: T) => any;
 
 export class ValidationError extends Error {
-  constructor(
-    message: string,
-    /**
-     * Whether the validation should stop after hitting this error.
-     */
-    readonly bail = false,
-    cause?: unknown,
-  ) {
-    super(message, { cause });
+  /**
+   * Whether the validation should stop after hitting this error.
+   */
+  readonly bail: boolean;
+
+  constructor(message: string, opts?: { bail: boolean; cause?: unknown }) {
+    super(message, { cause: opts?.cause });
+    this.bail = opts?.bail ?? true;
+  }
+
+  /**
+   * Maps any value to a `ValidationError`.
+   *
+   * - If `e` is an instance of `ValidationError`, it's returned as is;
+   * - If `e` is an instance of `Error`, its message is used as the new `ValidationError`'s
+   *   message, and it's set as the cause.
+   * - Otherwise, `e` is converted to a string and set as the error's message and cause.
+   */
+  static from(e: unknown): ValidationError {
+    if (e instanceof ValidationError) {
+      return e;
+    }
+
+    if (e instanceof Error) {
+      return new ValidationError(e.message, { bail: true, cause: e });
+    }
+
+    return new ValidationError(String(e), { bail: true, cause: e });
   }
 }
 
@@ -82,7 +101,7 @@ export function createValidation<Value, InvalidValue = Value>(
           try {
             await validator(value);
           } catch (e: unknown) {
-            const error = toValidationError(e);
+            const error = ValidationError.from(e);
             errors.push(error);
             if (error.bail) {
               break;
@@ -107,19 +126,4 @@ export function createValidation<Value, InvalidValue = Value>(
   );
 
   return validation;
-}
-
-/**
- * Maps any value to a {@link ValidationError}.
- */
-function toValidationError(e: unknown): ValidationError {
-  if (e instanceof ValidationError) {
-    return e;
-  }
-
-  if (e instanceof Error) {
-    return new ValidationError(e.message, false, e);
-  }
-
-  return new ValidationError(String(e), false, e);
 }

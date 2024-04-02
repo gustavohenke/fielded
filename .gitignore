@@ -1,5 +1,6 @@
 # Outputs
 /dist
+/coverage
 
 # Logs
 *.log

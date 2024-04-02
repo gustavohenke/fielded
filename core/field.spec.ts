@@ -12,22 +12,34 @@ describe("Field", () => {
       expect(field.value).toBe(1);
     });
 
-    it("triggers validation", async () => {
-      const field = Field.text().addValidators(() => Promise.reject("nope"));
+    it("triggers validation", () => {
+      const field = Field.text().addValidators(() => {});
+      vi.spyOn(field, "validate");
       field.set("foo");
-      expect(field.validation!.state).toBe("pending");
-
-      await when(() => field.validation!.state !== "pending");
+      expect(field.validate).toHaveBeenCalledTimes(1);
     });
   });
 
-  describe("#validation", () => {
-    it("is unset until value is set", () => {
-      const field = Field.text().addValidators(() => Promise.reject("nope"));
+  describe("#validate()", () => {
+    it("sets #validation", async () => {
+      const field = Field.text().addValidators(() => Promise.resolve());
       expect(field.validation).toBeUndefined();
 
-      field.set("foo");
+      field.validate();
       expect(field.validation).not.toBeUndefined();
+    });
+
+    it("triggers validation", async () => {
+      const field = Field.text().addValidators(() => Promise.resolve());
+      field.validate();
+      expect(field.validation!.state).toBe("pending");
+      await when(() => field.validation!.state !== "pending");
+    });
+
+    it("returns the finished validation", async () => {
+      const field = Field.text().addValidators(() => Promise.resolve());
+      const result = await field.validate();
+      expect(result.state).toBe("valid");
     });
   });
 

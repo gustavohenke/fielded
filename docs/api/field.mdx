@@ -60,6 +60,19 @@ const value = Field.number().set(42).value;
 console.log(value); // prints 42
 ```
 
+### `.validate()`
+
+Triggers validation using the field's current value.
+Returns a promise for the finished [validation state](./validation.mdx#validation-1).
+
+```ts
+const field = Field.number(42);
+const validation = await field.validate();
+if (validation.state === "valid") {
+  console.log(`The field's value ${validation.value} is valid`);
+}
+```
+
 ### `.addValidators(...validators)`
 
 Adds one or more validators.<br />

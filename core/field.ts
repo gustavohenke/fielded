@@ -18,12 +18,6 @@ type FieldOptions<Value extends FieldValue> = {
   initialValue?: Value | null;
 };
 
-/**
- * A validator function which receives the value of a field, and must return an error message,
- * or undefined, if the field is valid.
- */
-type FieldValidator<Value extends FieldValue> = (value: Value | undefined) => string | undefined;
-
 export abstract class Field<Value extends FieldValue> {
   private readonly options?: FieldOptions<Value>;
   private readonly validators: Validator<Value>[] = [];
@@ -84,9 +78,15 @@ export abstract class Field<Value extends FieldValue> {
   @action
   set(value: Value | undefined): this {
     this.value = value;
-    this.validation = createValidation(this.validators);
-    this.validation.validate(value);
+    this.validate();
     return this;
+  }
+
+  @action
+  async validate(): Promise<Validation<FieldValue, FieldValue | undefined>> {
+    this.validation = createValidation(this.validators);
+    await this.validation.validate(this.value);
+    return this.validation;
   }
 
   /**

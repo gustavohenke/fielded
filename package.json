@@ -20,13 +20,13 @@
   "devDependencies": {
     "@docusaurus/core": "^3.0.0",
     "@docusaurus/preset-classic": "^3.0.0",
-    "@vitest/coverage-v8": "^1.4.0",
+    "@vitest/coverage-v8": "^1.5.0",
     "mobx-react": "^7.5.2",
     "prettier": "^2.7.1",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
     "typescript": "^5.4.2",
-    "vitest": "^1.0.0"
+    "vitest": "^1.5.0"
   },
   "files": [
     "docs",

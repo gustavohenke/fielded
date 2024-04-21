@@ -79,6 +79,15 @@ export class ValidationError extends Error {
 }
 
 /**
+ * Special token that validators in aggregated objects (such as form or form arrays) can return to
+ * stop validation and mark it as invalid without actually having any errors.
+ *
+ * For example, a form might want to run the validations of all its component fields and mark itself
+ * invalid if the components have errors.
+ */
+export const AGGREGATE_ERROR = {};
+
+/**
  * Create a validation state based off of a list of validators.
  */
 export function createValidation<Value, InvalidValue = Value>(
@@ -96,10 +105,14 @@ export function createValidation<Value, InvalidValue = Value>(
       async validate(value: InvalidValue) {
         update({ state: "pending", errors: [], value: undefined as never });
 
+        let result: unknown;
         const errors = [];
         for (const validator of allValidators) {
           try {
-            await validator(value);
+            result = await validator(value);
+            if (result === AGGREGATE_ERROR) {
+              break;
+            }
           } catch (e: unknown) {
             const error = ValidationError.from(e);
             errors.push(error);
@@ -109,7 +122,7 @@ export function createValidation<Value, InvalidValue = Value>(
           }
         }
 
-        if (errors.length) {
+        if (result === AGGREGATE_ERROR || errors.length) {
           update({ state: "invalid", errors, value: undefined as never });
         } else {
           update({ state: "valid", errors, value: value as unknown as Value });

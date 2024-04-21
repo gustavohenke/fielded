@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { ValidationError, createValidation } from "./validation";
+import { AGGREGATE_ERROR, ValidationError, createValidation } from "./validation";
 import { when } from "mobx";
 
 describe("createValidation()", () => {
@@ -33,6 +33,18 @@ describe("createValidation()", () => {
       const v2 = vi.fn(() => {
         throw new ValidationError("fail", { bail: true });
       });
+      const v3 = vi.fn();
+      const validation = createValidation(v1, v2, v3);
+      await validation.validate("foo");
+
+      expect(v1).toHaveBeenCalled();
+      expect(v2).toHaveBeenCalled();
+      expect(v3).not.toHaveBeenCalled();
+    });
+
+    it("runs validators until an AGGREGATE_ERROR is returned", async () => {
+      const v1 = vi.fn();
+      const v2 = vi.fn(() => AGGREGATE_ERROR);
       const v3 = vi.fn();
       const validation = createValidation(v1, v2, v3);
       await validation.validate("foo");
@@ -120,6 +132,36 @@ describe("createValidation()", () => {
           when(() => validation.state === "invalid"),
           when(() => validation.value === undefined),
           when(() => validation.errors.length > 0),
+        ]);
+      });
+    });
+
+    describe("on AGGREGATE_ERROR", () => {
+      it("transitions to invalid state and sets whatever errors", async () => {
+        const validation = createValidation(
+          () => {
+            throw new ValidationError("foo", { bail: false });
+          },
+          () => AGGREGATE_ERROR,
+        );
+        await validation.validate("foo");
+        expect(validation.state).toBe("invalid");
+        expect(validation.errors).toHaveLength(1);
+      });
+
+      it("updates observable state", async () => {
+        const validation = createValidation(
+          () => {
+            throw new ValidationError("foo", { bail: false });
+          },
+          async () => AGGREGATE_ERROR,
+        );
+        validation.validate("foo");
+        expect(validation.state).toBe("pending");
+        await Promise.all([
+          when(() => validation.state === "invalid"),
+          when(() => validation.value === undefined),
+          when(() => validation.errors.length === 1),
         ]);
       });
     });

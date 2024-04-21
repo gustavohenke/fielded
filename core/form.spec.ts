@@ -1,49 +1,21 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { Field } from "./field";
 import { Form, FormArray } from "./form";
 import { ValidationError } from "./validation";
+import { when } from "mobx";
 
 const throwWith = (error: string) => () => {
   throw new Error(error);
 };
 
 describe("Form", () => {
-  describe("#error", () => {
-    it("is the first validation error from a field", () => {
-      const form = new Form({
-        fruit: Field.text().addValidators(throwWith("Required")),
-        color: Field.text().addValidators(throwWith("Nope")),
-      });
-      form.fields.color.set("red");
-      form.fields.fruit.set("apple");
+  describe("#errors", () => {
+    it("is empty when the form has not been validated", async () => {
+      const form = new Form({}).addValidators(() => Promise.reject("nope"));
+      expect(form.errors).toHaveLength(0);
 
-      expect(form.error).toEqual(new ValidationError("Required"));
-    });
-
-    it("is the first validation error from a nested form", () => {
-      const form = new Form({
-        fruit: Field.text().addValidators(() => void 0),
-        nutrition: new Form({
-          energy: Field.number().addValidators(throwWith("Required")),
-        }),
-      });
-      form.fields.fruit.set("apple");
-      form.fields.nutrition.fields.energy.set(undefined);
-
-      expect(form.error).toEqual(new ValidationError("Required"));
-    });
-
-    it("is the first validation error from a nested list of forms", () => {
-      const form = new Form({
-        protein: Field.text().addValidators(() => void 0),
-        recipes: new FormArray([
-          new Form({ name: Field.text().addValidators(throwWith("Required")) }),
-        ]),
-      });
-      form.fields.protein.set(undefined);
-      form.fields.recipes.rows[0].fields.name.set(undefined);
-
-      expect(form.error).toEqual(new ValidationError("Required"));
+      form.validate();
+      await when(() => form.errors.length > 0);
     });
   });
 
@@ -94,18 +66,62 @@ describe("Form", () => {
       });
     });
   });
+
+  describe("#validate()", () => {
+    it("sets #validation", () => {
+      const form = new Form({});
+      expect(form.validation).toBeUndefined();
+
+      form.validate();
+      expect(form.validation).not.toBeUndefined();
+    });
+
+    it("triggers validation on all nested fields, forms and list of forms", async () => {
+      const validator = vi.fn();
+      const form = new Form({
+        name: Field.text().addValidators(validator),
+        address: new Form({}).addValidators(validator),
+        pets: new FormArray([]).addValidators(validator),
+      });
+      expect(form.fields.name.validation).toBeUndefined();
+      expect(form.fields.address.validation).toBeUndefined();
+      expect(form.fields.pets.validation).toBeUndefined();
+
+      form.validate();
+      expect(form.fields.name.validation).not.toBeUndefined();
+      expect(form.fields.address.validation).not.toBeUndefined();
+      expect(form.fields.pets.validation).not.toBeUndefined();
+
+      expect(form.validation?.state).toBe("pending");
+      await when(() => form.validation?.state !== "pending");
+      expect(validator).toHaveBeenCalledTimes(3);
+    });
+
+    it("triggers own validators", async () => {
+      const validator = vi.fn(() => Promise.resolve());
+      const form = new Form({}).addValidators(validator);
+      form.validate();
+      expect(form.validation?.state).toBe("pending");
+      await when(() => form.validation?.state !== "pending");
+      expect(validator).toHaveBeenCalledTimes(1);
+    });
+
+    it("returns the finished validation", async () => {
+      const field = new Form({}).addValidators(() => Promise.resolve());
+      const result = await field.validate();
+      expect(result.state).toBe("valid");
+    });
+  });
 });
 
 describe("FormArray", () => {
-  describe("#error", () => {
-    it("is the first validation error from a nested list of forms", () => {
-      const array = new FormArray([
-        new Form({
-          name: Field.text().addValidators(throwWith("Required")),
-        }),
-      ]);
-      array.rows[0].fields.name.set("");
-      expect(array.error).toEqual(new ValidationError("Required"));
+  describe("#errors", () => {
+    it("is empty when the array has not been validated", async () => {
+      const array = new FormArray([]).addValidators(() => Promise.reject("nope"));
+      expect(array.errors).toHaveLength(0);
+
+      array.validate();
+      await when(() => array.errors.length > 0);
     });
   });
 
@@ -153,6 +169,49 @@ describe("FormArray", () => {
         { name: "chicken stroganoff" },
         { name: undefined },
       ]);
+    });
+  });
+
+  describe("#validate()", () => {
+    it("sets #validation", () => {
+      const array = new FormArray([]);
+      expect(array.validation).toBeUndefined();
+
+      array.validate();
+      expect(array.validation).not.toBeUndefined();
+    });
+
+    it("triggers validation on all nested forms", async () => {
+      const validator = vi.fn();
+      const array = new FormArray([
+        new Form({}).addValidators(validator),
+        new Form({}).addValidators(validator),
+      ]);
+      expect(array.rows[0].validation).toBeUndefined();
+      expect(array.rows[1].validation).toBeUndefined();
+
+      array.validate();
+      expect(array.rows[0].validation).not.toBeUndefined();
+      expect(array.rows[1].validation).not.toBeUndefined();
+
+      expect(array.validation?.state).toBe("pending");
+      await when(() => array.validation?.state !== "pending");
+      expect(validator).toHaveBeenCalledTimes(2);
+    });
+
+    it("triggers own validators", async () => {
+      const validator = vi.fn(() => Promise.resolve());
+      const array = new FormArray([]).addValidators(validator);
+      array.validate();
+      expect(array.validation?.state).toBe("pending");
+      await when(() => array.validation?.state !== "pending");
+      expect(validator).toHaveBeenCalledTimes(1);
+    });
+
+    it("returns the finished validation", async () => {
+      const field = new FormArray([]).addValidators(() => Promise.resolve());
+      const result = await field.validate();
+      expect(result.state).toBe("valid");
     });
   });
 });

@@ -22,7 +22,7 @@ describe("Field", () => {
 
   describe("#validate()", () => {
     it("sets #validation", async () => {
-      const field = Field.text().addValidators(() => Promise.resolve());
+      const field = Field.text();
       expect(field.validation).toBeUndefined();
 
       field.validate();
@@ -30,10 +30,12 @@ describe("Field", () => {
     });
 
     it("triggers validation", async () => {
-      const field = Field.text().addValidators(() => Promise.resolve());
+      const validator = vi.fn(() => Promise.resolve());
+      const field = Field.text().addValidators(validator);
       field.validate();
       expect(field.validation!.state).toBe("pending");
       await when(() => field.validation!.state !== "pending");
+      expect(validator).toHaveBeenCalledTimes(1);
     });
 
     it("returns the finished validation", async () => {

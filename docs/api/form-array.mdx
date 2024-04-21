@@ -36,31 +36,15 @@ const pets = new FormArray([new PetForm("Buddy")]);
 console.log(pets.rows[0].fields.name.value); // prints "Buddy"
 ```
 
-### `.valid`
+### `.errors`
 
-`true` if all of the nested forms and their fields are valid, `false` otherwise.
+Observable list of validation errors of the form array.
+Shorthand for `array.validation.errors`.
 
 ### `.error`
 
-Observable validation error of the first field that is invalid, if any.
-
-```ts
-class PetForm extends Form<{ name: Field<string> }> {
-  constructor(name?: string) {
-    super({
-      name: Field.text(name).addValidators((value) => {
-        if (!value) {
-          return "Please type a name";
-        }
-      }),
-    });
-  }
-}
-
-const characters = new FormArray([new PetForm("Buddy"), new PetForm()]);
-
-console.log(form.error); // prints "Please type a name"
-```
+Observable validation error of the form array, if any.
+Shorthand for `array.validation.errors[0]`.
 
 ## Methods
 
@@ -108,4 +92,36 @@ const characters = new FormArray([
 
 console.log(characters.snapshot());
 // prints [{ name: "Homer", show: "The Simpsons" }, { name: "" }]
+```
+
+### `.validate()`
+
+Triggers validation using the form array's snapshot. All rows are validated as well.
+
+Returns a promise for the finished [validation state](./validation.mdx#validation-1).
+
+```ts
+const pets = new FormArray([]);
+const validation = await pets.validate();
+if (validation.state === "valid") {
+  console.log("The pets list and all its nested pet forms are valid");
+}
+```
+
+### `.addValidators(...validators)`
+
+Adds one or more validators.<br />
+A validator is a function which takes a snapshot of the form array and throws an error, or returns
+a promise that rejects, if the value is invalid.
+
+```ts
+function isNotEmpty(rows: FormSnapshot<PetForm[]>) {
+  if (rows.length === 0) {
+    throw new Error("No pets listed");
+  }
+}
+
+const pets = new FormArray([]);
+await pets.addValidators(isNotEmpty).validate();
+console.log(pets.error); // "No pets listed"
 ```

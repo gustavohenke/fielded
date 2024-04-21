@@ -1,6 +1,12 @@
 import { action, computed, makeObservable, observable } from "mobx";
 import { Field } from "./field";
-import { ValidationError } from "./validation";
+import {
+  AGGREGATE_ERROR,
+  Validation,
+  ValidationError,
+  Validator,
+  createValidation,
+} from "./validation";
 
 /**
  * A map from field name to its state, in the form of either `Field`, `Form` or `FormArray`.
@@ -28,32 +34,28 @@ export type FormSnapshot<T extends FormData> = T extends Form<infer FormType>[]
     };
 
 export class Form<T extends FormDataMap> {
+  private readonly validators: Validator<FormSnapshot<T>>[] = [];
+
   /**
    * An object of fields that compose this form.
    */
   readonly fields: T;
 
+  @observable.ref
+  validation?: Validation<FormSnapshot<T>>;
+
   /**
-   * Observable, first validation error from any of the nested forms/fields.
+   * Observable, first validation error of the form.
    */
   get error(): ValidationError | undefined {
-    return this.errors[0];
+    return this.errors.at(0);
   }
 
   /**
-   * Observable list of validation errors from any of the nested forms/fields.
+   * Observable list of validation errors of the form.
    */
-  @computed
   get errors(): readonly ValidationError[] {
-    return Object.values(this.fields).flatMap((field) => field.errors);
-  }
-
-  /**
-   * Whether the form is valid.
-   */
-  @computed
-  get valid() {
-    return this.error == null;
+    return this.validation?.errors || [];
   }
 
   constructor(fields: T) {
@@ -74,36 +76,59 @@ export class Form<T extends FormDataMap> {
     }
     return snapshot;
   }
+
+  @action
+  async validate(): Promise<Validation<FormSnapshot<T>>> {
+    this.validation = createValidation<FormSnapshot<T>>(() => this.validateAll(), this.validators);
+    await this.validation.validate(this.snapshot());
+    return this.validation;
+  }
+
+  /**
+   * Add one or more validators to this form.
+   * @returns self, for chaining
+   */
+  addValidators(...validators: Validator<FormSnapshot<T>>[]): this {
+    this.validators.push(...validators);
+    return this;
+  }
+
+  private async validateAll() {
+    const validations = await Promise.all(
+      Object.values(this.fields).map((field) => field.validate()),
+    );
+
+    const invalid = validations.some((validation) => validation?.state === "invalid");
+    if (invalid) {
+      return AGGREGATE_ERROR;
+    }
+  }
 }
 
 export class FormArray<T extends Form<any>> {
+  private readonly validators: Validator<FormSnapshot<T[]>>[] = [];
+
   /**
    * An observable list of forms that compose this form.
    */
   @observable.shallow
   readonly rows: T[];
 
+  @observable.ref
+  validation?: Validation<FormSnapshot<T[]>>;
+
   /**
-   * Observable, first validation error from any of nested the forms/fields.
+   * Observable, first validation error of the form array.
    */
   get error(): ValidationError | undefined {
-    return this.errors[0];
+    return this.errors.at(0);
   }
 
   /**
-   * Observable list of validation errors from all of the nested the forms/fields.
+   * Observable list of validation errors of the form array.
    */
-  @computed
   get errors(): readonly ValidationError[] {
-    return Object.values(this.rows).flatMap((row) => row.errors);
-  }
-
-  /**
-   * Whether the form list is valid.
-   */
-  @computed
-  get valid() {
-    return this.error == null;
+    return this.validation?.errors || [];
   }
 
   constructor(rows: T[] = []) {
@@ -145,5 +170,32 @@ export class FormArray<T extends Form<any>> {
    */
   snapshot(): FormSnapshot<T[]> {
     return this.rows.map((f) => f.snapshot()) as FormSnapshot<T[]>;
+  }
+
+  @action
+  async validate(): Promise<Validation<FormSnapshot<T[]>>> {
+    this.validation = createValidation<FormSnapshot<T[]>>(
+      () => this.validateAll(),
+      this.validators,
+    );
+    await this.validation.validate(this.snapshot());
+    return this.validation;
+  }
+
+  /**
+   * Add one or more validators to this form array.
+   * @returns self, for chaining
+   */
+  addValidators(...validators: Validator<FormSnapshot<T[]>>[]): this {
+    this.validators.push(...validators);
+    return this;
+  }
+
+  private async validateAll() {
+    const validations = await Promise.all(this.rows.map((field) => field.validate()));
+    const invalid = validations.some((validation) => validation?.state === "invalid");
+    if (invalid) {
+      return AGGREGATE_ERROR;
+    }
   }
 }

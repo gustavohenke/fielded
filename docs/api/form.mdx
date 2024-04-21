@@ -33,30 +33,20 @@ const form = new Form({
 console.log(form.fields.name.value); // prints "John Doe"
 ```
 
-### `.valid`
+### `.validation`
 
-`true` if all of the form's fields and nested forms are valid, `false` otherwise.
+A [`Validation`](./validation.mdx) object representing the field's state of validation.
+Undefined unless the form has been validated before.
+
+### `.errors`
+
+Observable list of validation errors of the form.
+Shorthand for `form.validation.errors`.
 
 ### `.error`
 
-Observable validation error of the first field that is invalid, if any.
-
-```ts
-function makeRequiredValidator(errorMsg: string) {
-  return (value: any) => {
-    if (!value) {
-      return errorMsg;
-    }
-  };
-}
-
-const form = new Form({
-  name: Field.text("John Doe").addValidators(makeRequiredValidator("Please type your name")),
-  age: Field.number().addValidators(makeRequiredValidator("Please type your age")),
-});
-
-console.log(form.error); // prints "Please type your age"
-```
+Observable validation error of the form, if any.
+Shorthand for `form.validation.errors[0]`.
 
 ## Methods
 
@@ -75,4 +65,39 @@ const form = new Form({
 
 console.log(form.snapshot());
 // prints { name: "John Doe", hobbies: [{ description: "photography" }, {}] }
+```
+
+### `.validate()`
+
+Triggers validation using the form's snapshot. All fields are validated as well.
+
+Returns a promise for the finished [validation state](./validation.mdx#validation-1).
+
+```ts
+const form = new Form({ name: Field.text() });
+const validation = await form.validate();
+if (validation.state === "valid") {
+  console.log("The form and all its fields are valid");
+}
+```
+
+### `.addValidators(...validators)`
+
+Adds one or more validators.<br />
+A validator is a function which takes a snapshot of the form and throws an error, or returns a promise
+that rejects, if the value is invalid.
+
+```ts
+function isAnswer({ number1, number2 }: { number1: number; number2: number }) {
+  if (number1 + number2 !== 42) {
+    throw new Error("Not the right answer");
+  }
+}
+
+const answer = new Form({
+  number1: Field.number(),
+  number2: Field.number(),
+});
+await answer.addValidators(isAnswer).validate();
+console.log(answer.error); // "Not the right answer"
 ```

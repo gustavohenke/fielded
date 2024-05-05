@@ -26,7 +26,7 @@ type ValidationState<Value> = {
   readonly errors: readonly ValidationError[];
 } & (PendingValidation | ValidValidation<Value> | InvalidValidation);
 
-export type Validation<Value, InvalidValue = Value> = ValidationState<Value> & {
+export type Validation<InvalidValue, Value = InvalidValue> = ValidationState<Value> & {
   /**
    * Whether this validation produced any errors.
    * Shorthand for `errors.length > 0`.
@@ -44,7 +44,9 @@ export type Validation<Value, InvalidValue = Value> = ValidationState<Value> & {
  * A function which receives a value, and must throw to signal that the value is invalid.
  * If the function is asynchronous, then the promise must reject.
  */
-export type Validator<T> = (value: T) => any;
+export type Validator<InvalidValue, Value extends InvalidValue = InvalidValue> =
+  | ((value: InvalidValue) => asserts value is Value)
+  | ((value: InvalidValue) => any);
 
 export class ValidationError extends Error {
   /**
@@ -90,11 +92,11 @@ export const AGGREGATE_ERROR = {};
 /**
  * Create a validation state based off of a list of validators.
  */
-export function createValidation<Value, InvalidValue = Value>(
-  ...validators: (Validator<InvalidValue> | Validator<InvalidValue>[])[]
-): Validation<Value, InvalidValue> {
+export function createValidation<InvalidValue, Value extends InvalidValue = InvalidValue>(
+  ...validators: (Validator<InvalidValue, Value> | Validator<InvalidValue, Value>[])[]
+): Validation<InvalidValue, Value> {
   const allValidators = validators.flat();
-  const validation = makeAutoObservable<Validation<Value, InvalidValue>>(
+  const validation = makeAutoObservable<Validation<InvalidValue, Value>>(
     {
       state: "pending",
       value: undefined as never,

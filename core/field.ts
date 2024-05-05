@@ -1,40 +1,37 @@
-import { action, computed, makeObservable, observable } from "mobx";
+import { action, makeObservable, observable } from "mobx";
 import { Validation, ValidationError, Validator, createValidation } from "./validation";
 
-/**
- * A union of all supported types for field values.
- */
-type FieldValue = string | number;
+type FieldValue<T> = (T extends number ? number : string) | undefined;
 
 /**
  * The field type as a literal string.
  */
-type FieldType<Value extends FieldValue> = Value extends number ? "number" : "text";
+type FieldType = "number" | "text";
 
 /**
- * Bag of options that a field of the specified `Value` type can have.
+ * Bag of options that a field of the specified `T` type can have.
  */
-type FieldOptions<Value extends FieldValue> = {
-  initialValue?: Value | null;
+type FieldOptions<T> = {
+  validators: Validator<FieldValue<T>, T extends FieldValue<T> ? T : never>[];
+  initialValue?: FieldValue<T> | null;
 };
 
-export abstract class Field<Value extends FieldValue> {
-  private readonly options?: FieldOptions<Value>;
-  private readonly validators: Validator<Value>[] = [];
+export abstract class Field<T> {
+  protected readonly options: FieldOptions<T>;
 
   /**
    * The type of the field.
    */
-  readonly type: FieldType<Value>;
+  readonly type: FieldType;
 
   /**
    * Observable current value of the field.
    */
   @observable.ref
-  value: Value | undefined;
+  value: FieldValue<T>;
 
   @observable.ref
-  validation?: Validation<Value, Value | undefined>;
+  validation?: Validation<FieldValue<T>, T>;
 
   /**
    * The first validation error of the field, if any.
@@ -50,7 +47,7 @@ export abstract class Field<Value extends FieldValue> {
     return this.validation?.errors || [];
   }
 
-  protected constructor(type: FieldType<Value>, options?: FieldOptions<Value>) {
+  protected constructor(type: FieldType, options: FieldOptions<T>) {
     makeObservable(this);
     this.type = type;
     this.options = options;
@@ -61,14 +58,14 @@ export abstract class Field<Value extends FieldValue> {
    * Creates a field instance which has a number type.
    */
   static number(initialValue?: number | null): Field<number> {
-    return new NumberField({ initialValue });
+    return new NumberField({ initialValue, validators: [] });
   }
 
   /**
    * Creates a field instance which has a text type.
    */
   static text(initialValue?: string | null): Field<string> {
-    return new TextField({ initialValue });
+    return new TextField({ initialValue, validators: [] });
   }
 
   /**
@@ -76,27 +73,24 @@ export abstract class Field<Value extends FieldValue> {
    * @returns self, for chaining
    */
   @action
-  set(value: Value | undefined): this {
+  set(value: FieldValue<T>): this {
     this.value = value;
     this.validate();
     return this;
   }
 
   @action
-  async validate(): Promise<Validation<FieldValue, FieldValue | undefined>> {
-    this.validation = createValidation(this.validators);
+  async validate(): Promise<Validation<FieldValue<T>, T>> {
+    this.validation = createValidation(this.options.validators);
     await this.validation.validate(this.value);
     return this.validation;
   }
 
   /**
    * Add one or more validators to this field.
-   * @returns self, for chaining
+   * @returns a new field with the new validator(s) appended to the previous list of validators.
    */
-  addValidators(...validators: Validator<Value>[]): this {
-    this.validators.push(...validators);
-    return this;
-  }
+  abstract addValidators<U extends T = T>(...validators: Validator<T, U>[]): Field<U>;
 
   /**
    * Builds and returns an observable bag of handy React props for rendering an input or textarea
@@ -104,7 +98,7 @@ export abstract class Field<Value extends FieldValue> {
    */
   getReactProps(): {
     type: string;
-    value: NonNullable<Value> | "";
+    value: NonNullable<FieldValue<T>> | "";
     onChange: (evt: ChangeEvent) => void;
   } {
     const { value, type } = this;
@@ -123,24 +117,40 @@ export abstract class Field<Value extends FieldValue> {
   protected abstract onDOMChange(evt: ChangeEvent): void;
 }
 
-class NumberField extends Field<number> {
-  constructor(options?: FieldOptions<number>) {
+class NumberField<T extends number> extends Field<T> {
+  constructor(options: FieldOptions<T>) {
     super("number", options);
   }
 
   protected onDOMChange(evt: ChangeEvent): void {
     const value = Number(evt.target.value);
-    this.set(isNaN(value) ? undefined : value);
+    this.set(isNaN(value) ? undefined : (value as FieldValue<T>));
+  }
+
+  /** @inheritdoc */
+  addValidators<U extends T = T>(...validators: Validator<T, U>[]): Field<U> {
+    return new NumberField<U>({
+      ...this.options,
+      validators: this.options.validators.concat(validators as Validator<any>[]),
+    });
   }
 }
 
-class TextField extends Field<string> {
-  constructor(options?: FieldOptions<string>) {
+class TextField<T extends string> extends Field<T> {
+  constructor(options: FieldOptions<T>) {
     super("text", options);
   }
 
   protected onDOMChange(evt: ChangeEvent): void {
-    this.set(evt.target.value);
+    this.set(evt.target.value as FieldValue<T>);
+  }
+
+  /** @inheritdoc */
+  addValidators<U extends T = T>(...validators: Validator<T, U>[]): Field<U> {
+    return new TextField<U>({
+      ...this.options,
+      validators: this.options.validators.concat(validators as Validator<any>[]),
+    });
   }
 }
 

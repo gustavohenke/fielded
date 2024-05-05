@@ -1,12 +1,7 @@
+import { when } from "mobx";
 import { describe, expect, it, vi } from "vitest";
 import { Field } from "./field";
 import { Form, FormArray } from "./form";
-import { ValidationError } from "./validation";
-import { when } from "mobx";
-
-const throwWith = (error: string) => () => {
-  throw new Error(error);
-};
 
 describe("Form", () => {
   describe("#errors", () => {

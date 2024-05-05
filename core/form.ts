@@ -1,4 +1,4 @@
-import { action, computed, makeObservable, observable } from "mobx";
+import { action, makeObservable, observable } from "mobx";
 import { Field } from "./field";
 import {
   AGGREGATE_ERROR,
@@ -16,12 +16,17 @@ export type FormDataMap = Record<string, Field<any> | Form<any> | FormArray<any>
 export type FormData = FormDataMap | Form<any>[];
 
 /**
- * The snapshot type of a field.
+ * The snapshot type of a valid field.
  */
-export type FieldSnapshot<T extends Field<any>> = T["value"];
+export type FieldSnapshot<T extends Field<any>> = T extends Field<infer U> ? U : never;
 
 /**
- * The snapshot type of a form.
+ * The snapshot type of an invalid field.
+ */
+export type InvalidFieldSnapshot<T extends Field<any>> = T["value"];
+
+/**
+ * The snapshot type of a valid form.
  */
 export type FormSnapshot<T extends FormData> = T extends Form<infer FormType>[]
   ? FormSnapshot<FormType>[]
@@ -33,8 +38,21 @@ export type FormSnapshot<T extends FormData> = T extends Form<infer FormType>[]
         : never;
     };
 
+/**
+ * The snapshot type of an invalid form.
+ */
+export type InvalidFormSnapshot<T extends FormData> = T extends Form<infer FormType>[]
+  ? InvalidFormSnapshot<FormType>[]
+  : {
+      [K in keyof T]: T[K] extends Field<any>
+        ? InvalidFieldSnapshot<T[K]>
+        : T[K] extends Form<infer FormType>
+        ? InvalidFormSnapshot<FormType>
+        : never;
+    };
+
 export class Form<T extends FormDataMap> {
-  private readonly validators: Validator<FormSnapshot<T>>[] = [];
+  private readonly validators: Validator<InvalidFormSnapshot<T>, FormSnapshot<T>>[] = [];
 
   /**
    * An object of fields that compose this form.
@@ -42,7 +60,7 @@ export class Form<T extends FormDataMap> {
   readonly fields: T;
 
   @observable.ref
-  validation?: Validation<FormSnapshot<T>>;
+  validation?: Validation<InvalidFormSnapshot<T>, FormSnapshot<T>>;
 
   /**
    * Observable, first validation error of the form.
@@ -65,7 +83,7 @@ export class Form<T extends FormDataMap> {
   /**
    * Recursively snapshots the current state of the form and returns it.
    */
-  snapshot(): FormSnapshot<T> {
+  snapshot(): InvalidFormSnapshot<T> {
     const snapshot: any = {};
     for (const [key, value] of Object.entries(this.fields)) {
       if (value instanceof Field) {
@@ -78,8 +96,8 @@ export class Form<T extends FormDataMap> {
   }
 
   @action
-  async validate(): Promise<Validation<FormSnapshot<T>>> {
-    this.validation = createValidation<FormSnapshot<T>>(() => this.validateAll(), this.validators);
+  async validate(): Promise<Validation<InvalidFormSnapshot<T>, FormSnapshot<T>>> {
+    this.validation = createValidation(() => this.validateAll(), this.validators);
     await this.validation.validate(this.snapshot());
     return this.validation;
   }
@@ -88,7 +106,7 @@ export class Form<T extends FormDataMap> {
    * Add one or more validators to this form.
    * @returns self, for chaining
    */
-  addValidators(...validators: Validator<FormSnapshot<T>>[]): this {
+  addValidators(...validators: Validator<InvalidFormSnapshot<T>, FormSnapshot<T>>[]): this {
     this.validators.push(...validators);
     return this;
   }
@@ -106,7 +124,7 @@ export class Form<T extends FormDataMap> {
 }
 
 export class FormArray<T extends Form<any>> {
-  private readonly validators: Validator<FormSnapshot<T[]>>[] = [];
+  private readonly validators: Validator<InvalidFormSnapshot<T[]>, FormSnapshot<T[]>>[] = [];
 
   /**
    * An observable list of forms that compose this form.
@@ -115,7 +133,7 @@ export class FormArray<T extends Form<any>> {
   readonly rows: T[];
 
   @observable.ref
-  validation?: Validation<FormSnapshot<T[]>>;
+  validation?: Validation<InvalidFormSnapshot<T[]>, FormSnapshot<T[]>>;
 
   /**
    * Observable, first validation error of the form array.
@@ -168,16 +186,13 @@ export class FormArray<T extends Form<any>> {
   /**
    * Recursively snapshots the current state of the form and returns it.
    */
-  snapshot(): FormSnapshot<T[]> {
+  snapshot(): InvalidFormSnapshot<T[]> {
     return this.rows.map((f) => f.snapshot()) as FormSnapshot<T[]>;
   }
 
   @action
-  async validate(): Promise<Validation<FormSnapshot<T[]>>> {
-    this.validation = createValidation<FormSnapshot<T[]>>(
-      () => this.validateAll(),
-      this.validators,
-    );
+  async validate(): Promise<Validation<InvalidFormSnapshot<T[]>, FormSnapshot<T[]>>> {
+    this.validation = createValidation(() => this.validateAll(), this.validators);
     await this.validation.validate(this.snapshot());
     return this.validation;
   }
@@ -186,7 +201,7 @@ export class FormArray<T extends Form<any>> {
    * Add one or more validators to this form array.
    * @returns self, for chaining
    */
-  addValidators(...validators: Validator<FormSnapshot<T[]>>[]): this {
+  addValidators(...validators: Validator<InvalidFormSnapshot<T[]>, FormSnapshot<T[]>>[]): this {
     this.validators.push(...validators);
     return this;
   }

@@ -85,13 +85,15 @@ describe("NumberField", () => {
 
     it("creates a new field of different generic type", () => {
       const f1 = Field.number();
-      const f2: Field<1 | 2> = f1.addValidators((val: number): asserts val is 1 | 2 => {});
+      const f2: Field<1 | 2> = f1.addValidators(
+        (val: number | undefined): asserts val is 1 | 2 => {},
+      );
       const f3: Field<1> = f2.addValidators((val: 1 | 2): asserts val is 1 => {});
     });
 
     it("does not compile if the validator does not apply to the field type", () => {
       // @ts-expect-error
-      Field.number().addValidators((val: number): asserts val is "foo" => {});
+      Field.number().addValidators((val: number | undefined): asserts val is "foo" => {});
     });
   });
 });
@@ -116,14 +118,14 @@ describe("TextField", () => {
     it("creates a new field of different generic type", () => {
       const f1 = Field.text();
       const f2: Field<"foo" | "bar"> = f1.addValidators(
-        (val: string): asserts val is "foo" | "bar" => {},
+        (val: string | undefined): asserts val is "foo" | "bar" => {},
       );
       const f3: Field<"foo"> = f2.addValidators((val: "foo" | "bar"): asserts val is "foo" => {});
     });
 
     it("does not compile if the validator does not apply to the field type", () => {
       // @ts-expect-error
-      Field.text().addValidators((val: string): asserts val is 1 | 2 => {});
+      Field.text().addValidators((val: string | undefined): asserts val is 1 | 2 => {});
     });
   });
 });

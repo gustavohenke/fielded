@@ -55,16 +55,16 @@ export abstract class Field<T> {
   }
 
   /**
-   * Creates a field instance which has a number type.
+   * Creates a field instance which has a number type. It's optional by default.
    */
-  static number(initialValue?: number | null): Field<number> {
+  static number(initialValue?: number | null): Field<number | undefined> {
     return new NumberField({ initialValue, validators: [] });
   }
 
   /**
-   * Creates a field instance which has a text type.
+   * Creates a field instance which has a text type. It's optional by default.
    */
-  static text(initialValue?: string | null): Field<string> {
+  static text(initialValue?: string | null): Field<string | undefined> {
     return new TextField({ initialValue, validators: [] });
   }
 
@@ -117,7 +117,7 @@ export abstract class Field<T> {
   protected abstract onDOMChange(evt: ChangeEvent): void;
 }
 
-class NumberField<T extends number> extends Field<T> {
+class NumberField<T extends number | undefined> extends Field<T> {
   constructor(options: FieldOptions<T>) {
     super("number", options);
   }
@@ -136,7 +136,7 @@ class NumberField<T extends number> extends Field<T> {
   }
 }
 
-class TextField<T extends string> extends Field<T> {
+class TextField<T extends string | undefined> extends Field<T> {
   constructor(options: FieldOptions<T>) {
     super("text", options);
   }

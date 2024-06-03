@@ -19,7 +19,7 @@ describe("createValidation()", () => {
     it("runs all validators", async () => {
       const v1 = vi.fn();
       const v2 = vi.fn();
-      const validation = createValidation(v1, v2);
+      const validation = createValidation(v1, { validate: v2 });
       await validation.validate("foo");
 
       expect(v1).toHaveBeenCalledTimes(1);
@@ -44,7 +44,9 @@ describe("createValidation()", () => {
 
     it("runs validators until an AGGREGATE_ERROR is returned", async () => {
       const v1 = vi.fn();
-      const v2 = vi.fn(() => AGGREGATE_ERROR);
+      const v2 = vi.fn(() => {
+        throw AGGREGATE_ERROR;
+      });
       const v3 = vi.fn();
       const validation = createValidation(v1, v2, v3);
       await validation.validate("foo");
@@ -89,7 +91,7 @@ describe("createValidation()", () => {
       });
 
       it("updates observable state", async () => {
-        const validation = createValidation(async () => {});
+        const validation = createValidation(async (x) => x);
         validation.validate("foo");
         expect(validation.state).toBe("pending");
         await Promise.all([

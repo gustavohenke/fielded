@@ -52,7 +52,10 @@ export type InvalidFormSnapshot<T extends FormData> = T extends Form<infer FormT
     };
 
 export class Form<T extends FormDataMap> {
-  private readonly validators: Validator<InvalidFormSnapshot<T>, FormSnapshot<T>>[] = [];
+  /**
+   * @see `addValidators` for generic type explanation
+   */
+  private readonly validators: Validator<FormSnapshot<T>, FormSnapshot<T>>[] = [];
 
   /**
    * An object of fields that compose this form.
@@ -104,9 +107,16 @@ export class Form<T extends FormDataMap> {
 
   /**
    * Add one or more validators to this form.
+   *
+   * Note that the validator's "invalid value" is a `FormSnapshot`, which is the type of a
+   * validated form. That's because the underlying data is validated at the field level before
+   * additional `Form` validators run.
+   *
    * @returns self, for chaining
    */
-  addValidators(...validators: Validator<InvalidFormSnapshot<T>, FormSnapshot<T>>[]): this {
+  // TODO: In the future, it might be nice to allow refining the type, so that e.g. an array is
+  // cast to a tuple via a validator.
+  addValidators(...validators: Validator<FormSnapshot<T>, FormSnapshot<T>>[]): this {
     this.validators.push(...validators);
     return this;
   }
@@ -118,13 +128,13 @@ export class Form<T extends FormDataMap> {
 
     const invalid = validations.some((validation) => validation?.state === "invalid");
     if (invalid) {
-      return AGGREGATE_ERROR;
+      throw AGGREGATE_ERROR;
     }
   }
 }
 
 export class FormArray<T extends Form<any>> {
-  private readonly validators: Validator<InvalidFormSnapshot<T[]>, FormSnapshot<T[]>>[] = [];
+  private readonly validators: Validator<FormSnapshot<T[]>, FormSnapshot<T[]>>[] = [];
 
   /**
    * An observable list of forms that compose this form.
@@ -199,9 +209,16 @@ export class FormArray<T extends Form<any>> {
 
   /**
    * Add one or more validators to this form array.
+   *
+   * Note that the validator's "invalid value" is a `FormSnapshot`, which is the type of a
+   * validated form. That's because the underlying data is validated at the field level before
+   * additional `FormArray` validators run.
+   *
    * @returns self, for chaining
    */
-  addValidators(...validators: Validator<InvalidFormSnapshot<T[]>, FormSnapshot<T[]>>[]): this {
+  // TODO: In the future, it might be nice to allow refining the type, so that e.g. an array is
+  // cast to a tuple via a validator.
+  addValidators(...validators: Validator<FormSnapshot<T[]>, FormSnapshot<T[]>>[]): this {
     this.validators.push(...validators);
     return this;
   }
@@ -210,7 +227,7 @@ export class FormArray<T extends Form<any>> {
     const validations = await Promise.all(this.rows.map((field) => field.validate()));
     const invalid = validations.some((validation) => validation?.state === "invalid");
     if (invalid) {
-      return AGGREGATE_ERROR;
+      throw AGGREGATE_ERROR;
     }
   }
 }

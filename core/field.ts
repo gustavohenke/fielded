@@ -4,6 +4,13 @@ import { Validation, ValidationError, Validator, createValidation } from "./vali
 type FieldValue<T> = (T extends number ? number : string) | undefined;
 
 /**
+ * Utility type to check whether `A` is `never`, and if it's, fallback to `B` instead.
+ *
+ * @see https://stackoverflow.com/a/58978075/2083599
+ */
+type Either<A, B> = [A] extends [never] ? B : A;
+
+/**
  * The field type as a literal string.
  */
 type FieldType = "number" | "text";
@@ -90,7 +97,7 @@ export abstract class Field<T> {
    * Add one or more validators to this field.
    * @returns a new field with the new validator(s) appended to the previous list of validators.
    */
-  abstract addValidators<U extends T = T>(...validators: Validator<T, U>[]): Field<U>;
+  abstract addValidators<U extends T = T>(...validators: Validator<T, U>[]): Field<Either<U, T>>;
 
   /**
    * Builds and returns an observable bag of handy React props for rendering an input or textarea
@@ -128,8 +135,8 @@ class NumberField<T extends number | undefined> extends Field<T> {
   }
 
   /** @inheritdoc */
-  addValidators<U extends T = T>(...validators: Validator<T, U>[]): Field<U> {
-    return new NumberField<U>({
+  addValidators<U extends T = T>(...validators: Validator<T, U>[]): Field<Either<U, T>> {
+    return new NumberField<Either<U, T>>({
       ...this.options,
       validators: this.options.validators.concat(validators as Validator<any>[]),
     });
@@ -146,8 +153,8 @@ class TextField<T extends string | undefined> extends Field<T> {
   }
 
   /** @inheritdoc */
-  addValidators<U extends T = T>(...validators: Validator<T, U>[]): Field<U> {
-    return new TextField<U>({
+  addValidators<U extends T = T>(...validators: Validator<T, U>[]): Field<Either<U, T>> {
+    return new TextField<Either<U, T>>({
       ...this.options,
       validators: this.options.validators.concat(validators as Validator<any>[]),
     });

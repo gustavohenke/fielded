@@ -45,8 +45,11 @@ export type Validation<InvalidValue, Value = InvalidValue> = ValidationState<Val
  * If the function is asynchronous, then the promise must reject.
  */
 export type Validator<InvalidValue, Value extends InvalidValue = InvalidValue> =
+  // NOTE: Order is important. If the `asserts` type goes after the return types, TS might infer `Value` = `InvalidValue`
   | ((value: InvalidValue) => asserts value is Value)
-  | ((value: InvalidValue) => any);
+  | ((value: InvalidValue) => Promise<Value> | Value)
+  | { validate(value: InvalidValue): asserts value is Value }
+  | { validate(value: InvalidValue): Promise<Value> | Value };
 
 export class ValidationError extends Error {
   /**
@@ -111,11 +114,15 @@ export function createValidation<InvalidValue, Value extends InvalidValue = Inva
         const errors = [];
         for (const validator of allValidators) {
           try {
-            result = await validator(value);
-            if (result === AGGREGATE_ERROR) {
-              break;
-            }
+            result = await (typeof validator === "function"
+              ? validator(value)
+              : validator.validate(value));
           } catch (e: unknown) {
+            if (e === AGGREGATE_ERROR) {
+              result = e;
+              return;
+            }
+
             const error = ValidationError.from(e);
             errors.push(error);
             if (error.bail) {

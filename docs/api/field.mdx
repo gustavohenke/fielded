@@ -76,15 +76,17 @@ if (validation.state === "valid") {
 ### `.addValidators(...validators)`
 
 Adds one or more validators.<br />
-A validator is a function which takes the current field value and throws an error, or returns a promise
-that rejects, if the value is invalid.
+A validator is either a function, or an object with a `validate` function.
+It takes the current field value and throws an error, or returns a promise that rejects, if the value is invalid.
 
 ```ts
-function validateRequired(value: string | undefined) {
-  if (!value) {
-    throw new Error("Please type a value.");
-  }
-}
+const required = {
+  validate(value: string | undefined) {
+    if (!value) {
+      throw new Error("Please type a value.");
+    }
+  },
+};
 
 function validateWeekDay(value: string | undefined) {
   if (value === "saturday" || value === "sunday") {
@@ -92,7 +94,7 @@ function validateWeekDay(value: string | undefined) {
   }
 }
 
-const day = Field.text().addValidators(validateRequired, validateWeekDay);
+const day = Field.text().addValidators(required, validateWeekDay);
 day.set("sunday");
 console.log(day.error); // "Please choose a week day."
 ```

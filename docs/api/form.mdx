@@ -84,8 +84,8 @@ if (validation.state === "valid") {
 ### `.addValidators(...validators)`
 
 Adds one or more validators.<br />
-A validator is a function which takes a snapshot of the form and throws an error, or returns a promise
-that rejects, if the value is invalid.
+A validator is either a function, or an object with a `validate` function.
+It takes a snapshot of the form and throws an error, or returns a promise that rejects, if the value is invalid.
 
 ```ts
 function isAnswer({ number1, number2 }: { number1: number; number2: number }) {

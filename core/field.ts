@@ -65,14 +65,14 @@ export abstract class Field<T> {
    * Creates a field instance which has a number type. It's optional by default.
    */
   static number(initialValue?: number | null): Field<number | undefined> {
-    return new NumberField({ initialValue, validators: [] });
+    return new NumberFieldImpl({ initialValue, validators: [] });
   }
 
   /**
    * Creates a field instance which has a text type. It's optional by default.
    */
   static text(initialValue?: string | null): Field<string | undefined> {
-    return new TextField({ initialValue, validators: [] });
+    return new TextFieldImpl({ initialValue, validators: [] });
   }
 
   /**
@@ -124,7 +124,7 @@ export abstract class Field<T> {
   protected abstract onDOMChange(evt: ChangeEvent): void;
 }
 
-class NumberField<T extends number | undefined> extends Field<T> {
+class NumberFieldImpl<T extends number | undefined> extends Field<T> {
   constructor(config: FieldConfig<T>) {
     super("number", config);
   }
@@ -136,14 +136,14 @@ class NumberField<T extends number | undefined> extends Field<T> {
 
   /** @inheritdoc */
   addValidators<U extends T = T>(...validators: Validator<T, U>[]): Field<Either<U, T>> {
-    return new NumberField<Either<U, T>>({
+    return new NumberFieldImpl<Either<U, T>>({
       ...this.config,
       validators: this.config.validators.concat(validators as Validator<any>[]),
     });
   }
 }
 
-class TextField<T extends string | undefined> extends Field<T> {
+class TextFieldImpl<T extends string | undefined> extends Field<T> {
   constructor(config: FieldConfig<T>) {
     super("text", config);
   }
@@ -154,7 +154,7 @@ class TextField<T extends string | undefined> extends Field<T> {
 
   /** @inheritdoc */
   addValidators<U extends T = T>(...validators: Validator<T, U>[]): Field<Either<U, T>> {
-    return new TextField<Either<U, T>>({
+    return new TextFieldImpl<Either<U, T>>({
       ...this.config,
       validators: this.config.validators.concat(validators as Validator<any>[]),
     });

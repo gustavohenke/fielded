@@ -16,15 +16,15 @@ type Either<A, B> = [A] extends [never] ? B : A;
 type FieldType = "number" | "text";
 
 /**
- * Bag of options that a field of the specified `T` type can have.
+ * Configurations that a field of the specified `T` type can have.
  */
-type FieldOptions<T> = {
+type FieldConfig<T> = {
   validators: Validator<FieldValue<T>, T extends FieldValue<T> ? T : never>[];
   initialValue?: FieldValue<T> | null;
 };
 
 export abstract class Field<T> {
-  protected readonly options: FieldOptions<T>;
+  protected readonly config: FieldConfig<T>;
 
   /**
    * The type of the field.
@@ -54,11 +54,11 @@ export abstract class Field<T> {
     return this.validation?.errors || [];
   }
 
-  protected constructor(type: FieldType, options: FieldOptions<T>) {
+  protected constructor(type: FieldType, config: FieldConfig<T>) {
     makeObservable(this);
     this.type = type;
-    this.options = options;
-    this.value = this.options?.initialValue ?? undefined;
+    this.config = config;
+    this.value = this.config?.initialValue ?? undefined;
   }
 
   /**
@@ -88,7 +88,7 @@ export abstract class Field<T> {
 
   @action
   async validate(): Promise<Validation<FieldValue<T>, T>> {
-    this.validation = createValidation(this.options.validators);
+    this.validation = createValidation(this.config.validators);
     await this.validation.validate(this.value);
     return this.validation;
   }
@@ -125,8 +125,8 @@ export abstract class Field<T> {
 }
 
 class NumberField<T extends number | undefined> extends Field<T> {
-  constructor(options: FieldOptions<T>) {
-    super("number", options);
+  constructor(config: FieldConfig<T>) {
+    super("number", config);
   }
 
   protected onDOMChange(evt: ChangeEvent): void {
@@ -137,15 +137,15 @@ class NumberField<T extends number | undefined> extends Field<T> {
   /** @inheritdoc */
   addValidators<U extends T = T>(...validators: Validator<T, U>[]): Field<Either<U, T>> {
     return new NumberField<Either<U, T>>({
-      ...this.options,
-      validators: this.options.validators.concat(validators as Validator<any>[]),
+      ...this.config,
+      validators: this.config.validators.concat(validators as Validator<any>[]),
     });
   }
 }
 
 class TextField<T extends string | undefined> extends Field<T> {
-  constructor(options: FieldOptions<T>) {
-    super("text", options);
+  constructor(config: FieldConfig<T>) {
+    super("text", config);
   }
 
   protected onDOMChange(evt: ChangeEvent): void {
@@ -155,8 +155,8 @@ class TextField<T extends string | undefined> extends Field<T> {
   /** @inheritdoc */
   addValidators<U extends T = T>(...validators: Validator<T, U>[]): Field<Either<U, T>> {
     return new TextField<Either<U, T>>({
-      ...this.options,
-      validators: this.options.validators.concat(validators as Validator<any>[]),
+      ...this.config,
+      validators: this.config.validators.concat(validators as Validator<any>[]),
     });
   }
 }

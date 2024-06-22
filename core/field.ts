@@ -1,7 +1,38 @@
 import { action, makeObservable, observable } from "mobx";
 import { Validation, ValidationError, Validator, createValidation } from "./validation";
 
-type FieldValue<T> = (T extends number ? number : string) | undefined;
+/**
+ * The value of a field is
+ * 1. For literals and primitives: its primitive type, so `FieldValue<'foo'>` maps to `string`;
+ * 2. For collections, such as arrays, sets or maps: a collection of `FieldValue` of the
+ *    collection's generic type, so `FieldValue<(1 | 2)[]>` maps to `number[]`;
+ * 3. For other object types: the same type, so `FieldValue<Date>` is `Date`;
+ * 4. For `unknown`: `any`;
+ * 5. For anything else: `never`.
+ */
+// When changing this type, please keep the structure similar.
+// It's been tailored to expand to a simple value e.g. in intellisense of VS Code.
+type FieldValue<T> = T extends string
+  ? string
+  : T extends number
+  ? number
+  : T extends bigint
+  ? bigint
+  : T extends boolean
+  ? boolean
+  : T extends undefined
+  ? undefined
+  : T extends (infer U)[]
+  ? FieldValue<U>[]
+  : T extends Set<infer U>
+  ? Set<FieldValue<U>>
+  : T extends Map<infer K, infer U>
+  ? Map<K, FieldValue<U>>
+  : T extends object
+  ? T
+  : T extends unknown
+  ? any
+  : never;
 
 /**
  * Utility type to check whether `A` is `never`, and if it's, fallback to `B` instead.
@@ -11,34 +42,22 @@ type FieldValue<T> = (T extends number ? number : string) | undefined;
 type Either<A, B> = [A] extends [never] ? B : A;
 
 /**
- * The field type as a literal string.
- */
-type FieldType = "number" | "text";
-
-/**
  * Configurations that a field of the specified `T` type can have.
  */
 type FieldConfig<T> = {
-  validators: Validator<FieldValue<T>, T extends FieldValue<T> ? T : never>[];
-  initialValue?: FieldValue<T> | null;
+  validators: Validator<FieldValue<T> | undefined, T extends FieldValue<T> ? T : never>[];
+  initialValue?: FieldValue<T>;
 };
 
-export abstract class Field<T> {
-  protected readonly config: FieldConfig<T>;
-
-  /**
-   * The type of the field.
-   */
-  readonly type: FieldType;
-
+export class Field<T = unknown> {
   /**
    * Observable current value of the field.
    */
   @observable.ref
-  value: FieldValue<T>;
+  value: FieldValue<T> | undefined;
 
   @observable.ref
-  validation?: Validation<FieldValue<T>, T>;
+  validation?: Validation<FieldValue<T> | undefined, T>;
 
   /**
    * The first validation error of the field, if any.
@@ -54,25 +73,30 @@ export abstract class Field<T> {
     return this.validation?.errors || [];
   }
 
-  protected constructor(type: FieldType, config: FieldConfig<T>) {
+  private constructor(private readonly config: FieldConfig<T>) {
     makeObservable(this);
-    this.type = type;
-    this.config = config;
-    this.value = this.config?.initialValue ?? undefined;
+    this.value = this.config.initialValue;
   }
 
   /**
    * Creates a field instance which has a number type. It's optional by default.
    */
-  static number(initialValue?: number | null): Field<number | undefined> {
-    return new NumberFieldImpl({ initialValue, validators: [] });
+  static number(initialValue?: number): Field<number | undefined> {
+    return new Field<number | undefined>({ initialValue, validators: [] });
   }
 
   /**
    * Creates a field instance which has a text type. It's optional by default.
    */
-  static text(initialValue?: string | null): Field<string | undefined> {
-    return new TextFieldImpl({ initialValue, validators: [] });
+  static text(initialValue?: string): Field<string | undefined> {
+    return new Field<string | undefined>({ initialValue, validators: [] });
+  }
+
+  /**
+   * Creates a field instance whose type come from a validator.
+   */
+  static fromValidator<T>(validator: Validator<FieldValue<unknown>, T>): Field<T> {
+    return new Field({ validators: [validator] });
   }
 
   /**
@@ -97,32 +121,9 @@ export abstract class Field<T> {
    * Add one or more validators to this field.
    * @returns a new field with the new validator(s) appended to the previous list of validators.
    */
-  abstract addValidators<U extends T = T>(...validators: Validator<T, U>[]): Field<Either<U, T>>;
-}
-
-class NumberFieldImpl<T extends number | undefined> extends Field<T> {
-  constructor(config: FieldConfig<T>) {
-    super("number", config);
-  }
-
-  /** @inheritdoc */
   addValidators<U extends T = T>(...validators: Validator<T, U>[]): Field<Either<U, T>> {
-    return new NumberFieldImpl<Either<U, T>>({
-      ...this.config,
-      validators: this.config.validators.concat(validators as Validator<any>[]),
-    });
-  }
-}
-
-class TextFieldImpl<T extends string | undefined> extends Field<T> {
-  constructor(config: FieldConfig<T>) {
-    super("text", config);
-  }
-
-  /** @inheritdoc */
-  addValidators<U extends T = T>(...validators: Validator<T, U>[]): Field<Either<U, T>> {
-    return new TextFieldImpl<Either<U, T>>({
-      ...this.config,
+    return new Field({
+      ...(this.config as NoInfer<any>),
       validators: this.config.validators.concat(validators as Validator<any>[]),
     });
   }

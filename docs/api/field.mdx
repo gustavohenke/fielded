@@ -16,6 +16,20 @@ Creates a text field, optionally taking an initial value. Returns a `Field<strin
 
 Creates a number field, optionally taking an initial value. Returns a `Field<number | undefined>`.
 
+### `Field.fromValidator(validator)`
+
+Creates a field whose type is inferred from a validator.
+
+```ts
+const field: Field<string> = Field.fromValidator((value: unknown): asserts value is string => {
+  if (typeof value !== "string") {
+    throw new Error("Not a string");
+  }
+});
+```
+
+See [`.addValidators()`](#addvalidatorsvalidators) for more on the validators usage.
+
 ## Properties
 
 ### `.type`
@@ -97,25 +111,4 @@ function validateWeekDay(value: string | undefined) {
 const day = Field.text().addValidators(required, validateWeekDay);
 day.set("sunday");
 console.log(day.error); // "Please choose a week day."
-```
-
-### `.getReactProps()`
-
-Builds and returns a bag of observable React props, useful for rendering an input that represents
-this field.
-
-The props that are returned are:
-
-- `type`: the [HTML input type](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input#input_types)
-  best suited to this field, as per its own type;
-- `value`: the current field value, or an empty string, if there's none;
-- `onChange`: a change event handler which updates the `Field` instance with the input values,
-  casting them to match the field's internal type.
-
-```tsx
-import { observer } from "mobx-react";
-
-const SomeComponent = observer(({ field }: { field: Field<any> }) => {
-  return <input {...field.getReactProps()} />;
-});
 ```

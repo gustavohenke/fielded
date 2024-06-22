@@ -64,41 +64,7 @@ describe("Field", () => {
       await when(() => !!field.error);
     });
   });
-});
 
-describe("NumberField", () => {
-  describe("#addValidators()", () => {
-    it("creates a new field instance", () => {
-      const f1 = Field.number();
-      const f2 = f1.addValidators();
-      const f3 = f2.addValidators();
-      expect(f1).not.toBe(f2);
-      expect(f2).not.toBe(f3);
-    });
-
-    it("appends validators", async () => {
-      const v1 = vi.fn();
-      const v2 = vi.fn();
-      await Field.number().addValidators(v1).addValidators(v2).validate();
-      expect(v1.mock.invocationCallOrder[0]).toBeLessThan(v2.mock.invocationCallOrder[0]);
-    });
-
-    it("creates a new field of different generic type", () => {
-      const f1 = Field.number();
-      const f2: Field<1 | 2> = f1.addValidators(
-        (val: number | undefined): asserts val is 1 | 2 => {},
-      );
-      const f3: Field<1> = f2.addValidators((val: 1 | 2): asserts val is 1 => {});
-    });
-
-    it("does not compile if the validator does not apply to the field type", () => {
-      // @ts-expect-error
-      Field.number().addValidators((val: number | undefined): asserts val is "foo" => {});
-    });
-  });
-});
-
-describe("TextField", () => {
   describe("#addValidators()", () => {
     it("creates a new field instance", () => {
       const f1 = Field.text();
@@ -116,16 +82,17 @@ describe("TextField", () => {
     });
 
     it("creates a new field of different generic type", () => {
-      const f1 = Field.text();
-      const f2: Field<"foo" | "bar"> = f1.addValidators(
-        (val: string | undefined): asserts val is "foo" | "bar" => {},
+      const f1 = Field.number();
+      const f2: Field<1 | 2> = f1.addValidators(
+        (val: number | undefined): asserts val is 1 | 2 => {},
       );
-      const f3: Field<"foo"> = f2.addValidators((val: "foo" | "bar"): asserts val is "foo" => {});
+      const f3: Field<1> = f2.addValidators((val: 1 | 2): asserts val is 1 => {});
     });
 
     it("does not compile if the validator does not apply to the field type", () => {
-      // @ts-expect-error
-      Field.text().addValidators((val: string | undefined): asserts val is 1 | 2 => {});
+      Field.number()
+        // @ts-expect-error
+        .addValidators((val: number | undefined): asserts val is "foo" => {});
     });
   });
 });

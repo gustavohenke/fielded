@@ -98,40 +98,11 @@ export abstract class Field<T> {
    * @returns a new field with the new validator(s) appended to the previous list of validators.
    */
   abstract addValidators<U extends T = T>(...validators: Validator<T, U>[]): Field<Either<U, T>>;
-
-  /**
-   * Builds and returns an observable bag of handy React props for rendering an input or textarea
-   * element that represent this field.
-   */
-  getReactProps(): {
-    type: string;
-    value: NonNullable<FieldValue<T>> | "";
-    onChange: (evt: ChangeEvent) => void;
-  } {
-    const { value, type } = this;
-    return {
-      type,
-      // Default to empty string to avoid React complaining that an input
-      // has changed from uncontrolled to controlled.
-      value: value ?? "",
-      onChange: (evt) => this.onDOMChange(evt),
-    };
-  }
-
-  /**
-   * Callback for when a DOM ChangeEvent happens.
-   */
-  protected abstract onDOMChange(evt: ChangeEvent): void;
 }
 
 class NumberFieldImpl<T extends number | undefined> extends Field<T> {
   constructor(config: FieldConfig<T>) {
     super("number", config);
-  }
-
-  protected onDOMChange(evt: ChangeEvent): void {
-    const value = Number(evt.target.value);
-    this.set(isNaN(value) ? undefined : (value as FieldValue<T>));
   }
 
   /** @inheritdoc */
@@ -148,10 +119,6 @@ class TextFieldImpl<T extends string | undefined> extends Field<T> {
     super("text", config);
   }
 
-  protected onDOMChange(evt: ChangeEvent): void {
-    this.set(evt.target.value as FieldValue<T>);
-  }
-
   /** @inheritdoc */
   addValidators<U extends T = T>(...validators: Validator<T, U>[]): Field<Either<U, T>> {
     return new TextFieldImpl<Either<U, T>>({
@@ -160,7 +127,3 @@ class TextFieldImpl<T extends string | undefined> extends Field<T> {
     });
   }
 }
-
-type ChangeEvent = {
-  target: HTMLInputElement | HTMLTextAreaElement;
-};

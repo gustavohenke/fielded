@@ -6,6 +6,7 @@
   "license": "MIT",
   "homepage": "https://gustavohenke.github.io/fielded/",
   "main": "dist/core/index.js",
+  "types": "dist/core/index.d.ts",
   "scripts": {
     "build": "tsc -p .",
     "docs:build": "npm --prefix ./website run build",

@@ -1,5 +1,11 @@
 import { action, makeObservable, observable } from "mobx";
-import { Validation, ValidationError, Validator, createValidation } from "./validation";
+import {
+  Validation,
+  ValidationError,
+  Validator,
+  createFailedValidation,
+  createValidation,
+} from "./validation";
 
 /**
  * The value of a field is
@@ -126,5 +132,14 @@ export class Field<T = unknown> {
       ...(this.config as NoInfer<any>),
       validators: this.config.validators.concat(validators as Validator<any>[]),
     });
+  }
+
+  /**
+   * Sets the field to an invalid state with the specified error.
+   */
+  @action
+  setError(error: unknown): this {
+    this.validation = createFailedValidation([error]);
+    return this;
   }
 }

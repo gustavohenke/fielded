@@ -149,3 +149,18 @@ export function createValidation<InvalidValue, Value extends InvalidValue = Inva
 
   return validation;
 }
+
+/**
+ * Create a validation state in the invalid state, using the given errors.
+ */
+export function createFailedValidation(errors: readonly unknown[] = []): Validation<any> {
+  return {
+    state: "invalid",
+    value: undefined as never,
+    errors: errors.map((error) => ValidationError.from(error)),
+    get hasError() {
+      return this.errors.length > 0;
+    },
+    async validate() {},
+  };
+}

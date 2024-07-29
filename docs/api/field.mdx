@@ -112,3 +112,14 @@ const day = Field.text().addValidators(required, validateWeekDay);
 day.set("sunday");
 console.log(day.error); // "Please choose a week day."
 ```
+
+### `.setError(error)`
+
+Sets the field to an invalid state with the specified error.
+Returns the field itself, useful for chaining.
+
+```ts
+const name = Field.text();
+name.setError("Please type a name.");
+console.log(name.error); // "Please type a name."
+```

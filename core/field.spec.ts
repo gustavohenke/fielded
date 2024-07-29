@@ -1,6 +1,7 @@
 import { when } from "mobx";
 import { describe, expect, it, vi } from "vitest";
 import { Field } from "./field";
+import { ValidationError } from "./validation";
 
 describe("Field", () => {
   describe("#set()", () => {
@@ -93,6 +94,23 @@ describe("Field", () => {
       Field.number()
         // @ts-expect-error
         .addValidators((val: number | undefined): asserts val is "foo" => {});
+    });
+  });
+
+  describe("#setError()", () => {
+    it("sets the validation state of the field", () => {
+      const field = Field.number();
+      expect(field.validation).toBeUndefined();
+
+      field.setError("nope");
+      expect(field.validation).not.toBeUndefined();
+    });
+
+    it("marks the field invalid with the given error", () => {
+      const field = Field.number();
+      field.setError("nope");
+      expect(field.validation?.state).toBe("invalid");
+      expect(field.error).toEqual(ValidationError.from("nope"));
     });
   });
 });

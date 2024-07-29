@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-import { AGGREGATE_ERROR, ValidationError, createValidation } from "./validation";
+import {
+  AGGREGATE_ERROR,
+  ValidationError,
+  createFailedValidation,
+  createValidation,
+} from "./validation";
 import { when } from "mobx";
 
 describe("createValidation()", () => {
@@ -193,6 +198,19 @@ describe("createValidation()", () => {
       expect(validation.hasError).toBe(false);
       await when(() => validation.hasError);
     });
+  });
+});
+
+describe("createFailedValidation()", () => {
+  it("has state set to invalid", () => {
+    const validation = createFailedValidation();
+    expect(validation.state).toBe("invalid");
+  });
+
+  it("has the provided errors, mapped to ValidationError", () => {
+    const errors = [new ValidationError("oh no"), "did not work", new Error("try again")];
+    const validation = createFailedValidation(errors);
+    expect(validation.errors).toEqual(errors.map((error) => ValidationError.from(error)));
   });
 });
 

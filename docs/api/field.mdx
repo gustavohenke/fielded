@@ -37,14 +37,33 @@ See [`.addValidators()`](#addvalidatorsvalidators) for more on the validators us
 What the underlying type of the field is.
 Either `text` or `number`.
 
-### `.value`
+### `.rawValue`
 
-Observable value of the field (if any).
+Observable current value of the field (if any).
 
 ```ts
 const nameField = Field.text("John Doe");
 
-console.log(nameField.value); // prints "John Doe"
+console.log(nameField.rawValue); // prints "John Doe"
+```
+
+### `.value`
+
+Observable value of the field if valid. If invalid, it's undefined.
+
+```ts
+const username = Field.text();
+username.addValidators((value) => {
+  if (value === "john") {
+    throw new Error("taken");
+  }
+});
+
+username.set("john");
+console.log(username.value); // prints undefined
+
+username.set("johnny");
+console.log(username.value); // prints "johnny"
 ```
 
 ### `.validation`

@@ -23,7 +23,7 @@ export type FieldSnapshot<T extends Field<any>> = T extends Field<infer U> ? U :
 /**
  * The snapshot type of an invalid field.
  */
-export type InvalidFieldSnapshot<T extends Field<any>> = T["value"];
+export type InvalidFieldSnapshot<T extends Field<any>> = T["rawValue"];
 
 /**
  * The snapshot type of a valid form.
@@ -94,7 +94,7 @@ export class Form<T extends FormDataMap> {
     const snapshot: any = {};
     for (const [key, value] of Object.entries(this.fields)) {
       if (value instanceof Field) {
-        snapshot[key] = value.value;
+        snapshot[key] = value.rawValue;
       } else {
         snapshot[key] = value.snapshot();
       }

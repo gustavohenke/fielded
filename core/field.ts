@@ -1,4 +1,4 @@
-import { action, makeObservable, observable } from "mobx";
+import { action, computed, makeObservable, observable } from "mobx";
 import {
   Validation,
   ValidationError,
@@ -57,10 +57,20 @@ type FieldConfig<T> = {
 
 export class Field<T = unknown> {
   /**
-   * Observable current value of the field.
+   * Observable current value of the field, which might be invalid.
    */
   @observable.ref
-  value: FieldValue<T> | undefined;
+  rawValue: FieldValue<T> | undefined;
+
+  /**
+   * Observable current value of the field if valid, or undefined if invalid.
+   */
+  @computed
+  get value(): T | undefined {
+    if (this.validation?.state === "valid") {
+      return this.validation.value;
+    }
+  }
 
   @observable.ref
   validation?: Validation<FieldValue<T> | undefined, T>;
@@ -81,7 +91,7 @@ export class Field<T = unknown> {
 
   private constructor(private readonly config: FieldConfig<T>) {
     makeObservable(this);
-    this.value = this.config.initialValue;
+    this.rawValue = this.config.initialValue;
   }
 
   /**
@@ -114,7 +124,7 @@ export class Field<T = unknown> {
    */
   @action
   set(value: FieldValue<T>): this {
-    this.value = value;
+    this.rawValue = value;
     this.validate();
     return this;
   }
@@ -122,7 +132,7 @@ export class Field<T = unknown> {
   @action
   async validate(): Promise<Validation<FieldValue<T>, T>> {
     this.validation = createValidation(this.config.validators);
-    await this.validation.validate(this.value);
+    await this.validation.validate(this.rawValue);
     return this.validation;
   }
 

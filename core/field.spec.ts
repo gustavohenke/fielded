@@ -5,12 +5,12 @@ import { ValidationError } from "./validation";
 
 describe("Field", () => {
   describe("#set()", () => {
-    it("updates the value of the field", () => {
+    it("updates the raw value of the field", () => {
       const field = Field.number();
-      expect(field.value).toBe(undefined);
+      expect(field.rawValue).toBe(undefined);
 
       field.set(1);
-      expect(field.value).toBe(1);
+      expect(field.rawValue).toBe(1);
     });
 
     it("triggers validation", () => {
@@ -18,6 +18,26 @@ describe("Field", () => {
       vi.spyOn(field, "validate");
       field.set("foo");
       expect(field.validate).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("#value", () => {
+    it("is undefined, if the field is invalid", () => {
+      const field = Field.text().addValidators(() => {
+        throw new Error("nope");
+      });
+      expect(field.value).toBeUndefined();
+
+      field.set("foo");
+      expect(field.value).toBeUndefined();
+    });
+
+    it("is the valid value of the field", () => {
+      const field = Field.text();
+      expect(field.value).toBeUndefined();
+
+      field.set("foo");
+      expect(field.value).toBe("foo");
     });
   });
 

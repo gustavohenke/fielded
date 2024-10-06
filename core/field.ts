@@ -101,8 +101,11 @@ export class Field<T = unknown> {
   /**
    * Creates a field instance whose type come from a validator.
    */
-  static fromValidator<T>(validator: Validator<FieldValue<unknown>, T>): Field<T> {
-    return new Field({ validators: [validator] });
+  static fromValidator<T>(
+    validator: Validator<FieldValue<unknown>, T>,
+    initialValue?: FieldValue<T>,
+  ): Field<T> {
+    return new Field({ validators: [validator], initialValue });
   }
 
   /**

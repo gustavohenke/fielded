@@ -16,9 +16,9 @@ Creates a text field, optionally taking an initial value. Returns a `Field<strin
 
 Creates a number field, optionally taking an initial value. Returns a `Field<number | undefined>`.
 
-### `Field.fromValidator(validator)`
+### `Field.fromValidator(validator, initialValue)`
 
-Creates a field whose type is inferred from a validator.
+Creates a field whose type is inferred from a validator, optionally taking an initial value.
 
 ```ts
 const field: Field<string> = Field.fromValidator((value: unknown): asserts value is string => {

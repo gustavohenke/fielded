@@ -35,6 +35,8 @@ export type FormSnapshot<T extends FormData> = T extends Form<infer FormType>[]
         ? FieldSnapshot<T[K]>
         : T[K] extends Form<infer FormType>
         ? FormSnapshot<FormType>
+        : T[K] extends FormArray<Form<infer FormType>>
+        ? FormSnapshot<FormType>[]
         : never;
     };
 
@@ -48,6 +50,8 @@ export type InvalidFormSnapshot<T extends FormData> = T extends Form<infer FormT
         ? InvalidFieldSnapshot<T[K]>
         : T[K] extends Form<infer FormType>
         ? InvalidFormSnapshot<FormType>
+        : T[K] extends FormArray<Form<infer FormType>>
+        ? InvalidFormSnapshot<FormType>[]
         : never;
     };
 

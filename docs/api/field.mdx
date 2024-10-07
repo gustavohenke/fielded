@@ -93,6 +93,16 @@ const value = Field.number().set(42).value;
 console.log(value); // prints 42
 ```
 
+### `.reset()`
+
+Resets the field to its initial value, and removes validation state.
+
+```ts
+const field = Field.number(42);
+field.set(15).reset();
+console.log(field.value); // prints 42
+```
+
 ### `.validate()`
 
 Triggers validation using the field's current value.

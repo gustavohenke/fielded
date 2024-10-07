@@ -102,6 +102,18 @@ export class Form<T extends FormDataMap> {
     return snapshot;
   }
 
+  /**
+   * Resets this form by recursively calling `.reset()` on each nested field, and removing
+   * validation state.
+   */
+  @action
+  reset(): void {
+    this.validation = undefined;
+    for (const value of Object.values(this.fields)) {
+      value.reset();
+    }
+  }
+
   @action
   async validate(): Promise<Validation<InvalidFormSnapshot<T>, FormSnapshot<T>>> {
     this.validation = createValidation(() => this.validateAll(), this.validators);
@@ -140,6 +152,8 @@ export class Form<T extends FormDataMap> {
 export class FormArray<T extends Form<any>> {
   private readonly validators: Validator<FormSnapshot<T[]>, FormSnapshot<T[]>>[] = [];
 
+  private readonly initialValue: readonly T[];
+
   /**
    * An observable list of forms that compose this form.
    */
@@ -165,7 +179,8 @@ export class FormArray<T extends Form<any>> {
 
   constructor(rows: T[] = []) {
     makeObservable(this);
-    this.rows = rows;
+    this.initialValue = rows;
+    this.rows = rows.slice();
   }
 
   /**
@@ -202,6 +217,21 @@ export class FormArray<T extends Form<any>> {
    */
   snapshot(): InvalidFormSnapshot<T[]> {
     return this.rows.map((f) => f.snapshot()) as FormSnapshot<T[]>;
+  }
+
+  /**
+   * Resets this form array by removing excess rows, adding missing rows, recursively resetting
+   * each of them, and removing the validation state.
+   */
+  @action
+  reset(): void {
+    this.validation = undefined;
+
+    this.rows.splice(this.initialValue.length);
+    for (let i = 0; i < this.initialValue.length; i++) {
+      this.rows[i] = this.initialValue[i];
+      this.rows[i].reset();
+    }
   }
 
   @action

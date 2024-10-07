@@ -67,6 +67,21 @@ console.log(form.snapshot());
 // prints { name: "John Doe", hobbies: [{ description: "photography" }, {}] }
 ```
 
+### `.reset()`
+
+Recursively resets each field and removes the validation state.
+
+```ts
+const form = new Form({
+  name: Field.text("John Doe"),
+});
+form.fields.name.set("Johnny Doe");
+form.reset();
+
+console.log(form.snapshot());
+// prints { name: "John Doe" };
+```
+
 ### `.validate()`
 
 Triggers validation using the form's snapshot. All fields are validated as well.

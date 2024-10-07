@@ -94,6 +94,22 @@ console.log(characters.snapshot());
 // prints [{ name: "Homer", show: "The Simpsons" }, { name: "" }]
 ```
 
+### `.reset()`
+
+Removes excess rows, adds missing rows, recursively resets each standing row, and removes the
+validation state.
+
+```ts
+const characters = new FormArray([new Form({ name: Field.text("Homer") })]);
+characters.remove(0);
+characters.add(new Form({ name: Field.text() }));
+
+characters.reset();
+
+console.log(characters.snapshot());
+// prints [{ name: "Homer" }];
+```
+
 ### `.validate()`
 
 Triggers validation using the form array's snapshot. All rows are validated as well.

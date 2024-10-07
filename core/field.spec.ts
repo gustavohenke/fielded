@@ -41,6 +41,20 @@ describe("Field", () => {
     });
   });
 
+  describe("#reset()", () => {
+    it("removes validation state", () => {
+      const field = Field.text("foo");
+      field.set("bar").reset();
+      expect(field.validation).toBeUndefined();
+    });
+
+    it("sets initial value", () => {
+      const field = Field.text("foo");
+      field.set("bar").reset();
+      expect(field.rawValue).toBe("foo");
+    });
+  });
+
   describe("#validate()", () => {
     it("sets #validation", async () => {
       const field = Field.text();

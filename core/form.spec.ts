@@ -62,6 +62,44 @@ describe("Form", () => {
     });
   });
 
+  describe("#reset()", () => {
+    it("removes validation state", () => {
+      const form = new Form({
+        fruit: Field.text("banana"),
+      });
+      form.validate();
+      form.reset();
+      expect(form.validation).toBeUndefined();
+    });
+
+    it("resets each nested field", () => {
+      const fruit = Field.text();
+      vi.spyOn(fruit, "reset");
+
+      const form = new Form({ fruit });
+      form.reset();
+      expect(fruit.reset).toHaveBeenCalled();
+    });
+
+    it("resets each nested form", () => {
+      const nested = new Form({});
+      vi.spyOn(nested, "reset");
+
+      const form = new Form({ nested });
+      form.reset();
+      expect(nested.reset).toHaveBeenCalled();
+    });
+
+    it("resets each nested form array", () => {
+      const nested = new FormArray();
+      vi.spyOn(nested, "reset");
+
+      const form = new Form({ nested });
+      form.reset();
+      expect(nested.reset).toHaveBeenCalled();
+    });
+  });
+
   describe("#validate()", () => {
     it("sets #validation", () => {
       const form = new Form({});
@@ -164,6 +202,38 @@ describe("FormArray", () => {
         { name: "chicken stroganoff" },
         { name: undefined },
       ]);
+    });
+  });
+
+  describe("#reset()", () => {
+    it("removes validation state", () => {
+      const array = new FormArray([]);
+      array.validate();
+      array.reset();
+      expect(array.validation).toBeUndefined();
+    });
+
+    it("removes excess rows", () => {
+      const array = new FormArray([new Form({})]);
+      array.add(new Form({}));
+      array.reset();
+      expect(array.rows).toHaveLength(1);
+    });
+
+    it("adds missing rows", () => {
+      const array = new FormArray([new Form({})]);
+      array.remove(0);
+      array.reset();
+      expect(array.rows).toHaveLength(1);
+    });
+
+    it("resets each nested form", () => {
+      const nested = new Form({});
+      vi.spyOn(nested, "reset");
+
+      const array = new FormArray([nested]);
+      array.reset();
+      expect(nested.reset).toHaveBeenCalled();
     });
   });
 

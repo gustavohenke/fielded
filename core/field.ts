@@ -129,6 +129,15 @@ export class Field<T = unknown> {
     return this;
   }
 
+  /**
+   * Resets this field to its original value and removes its validation state.
+   */
+  @action
+  reset(): void {
+    this.validation = undefined;
+    this.rawValue = this.config.initialValue;
+  }
+
   @action
   async validate(): Promise<Validation<FieldValue<T>, T>> {
     this.validation = createValidation(this.config.validators);

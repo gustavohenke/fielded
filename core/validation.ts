@@ -152,15 +152,45 @@ export function createValidation<InvalidValue, Value extends InvalidValue = Inva
 
 /**
  * Create a validation state in the invalid state, using the given errors.
+ * Useful for testing.
  */
-export function createFailedValidation(errors: readonly unknown[] = []): Validation<any> {
-  return {
-    state: "invalid",
-    value: undefined as never,
-    errors: errors.map((error) => ValidationError.from(error)),
-    get hasError() {
-      return this.errors.length > 0;
-    },
-    async validate() {},
-  };
+export function createStubValidation(
+  state: "invalid",
+  errors?: readonly unknown[],
+): Validation<any>;
+
+/**
+ * Create a validation state in the valid state, using the given value.
+ * Useful for testing.
+ */
+export function createStubValidation<T = any>(state: "valid", value?: T): Validation<T>;
+
+/**
+ * Creates a validation state in the pending state.
+ * Useful for testing.
+ */
+export function createStubValidation(state: "pending"): Validation<any>;
+
+export function createStubValidation<T = any>(
+  state: Validation<T>["state"],
+  arg?: any,
+): Validation<T> {
+  const validate = async () => {};
+  switch (state) {
+    case "valid":
+      return { state, value: arg, errors: [], hasError: false, validate };
+
+    case "invalid":
+      const errors = arg || [];
+      return {
+        state,
+        value: undefined as never,
+        errors: errors.map((error: any) => ValidationError.from(error)),
+        hasError: errors.length > 0,
+        validate,
+      };
+
+    case "pending":
+      return { state, value: undefined as never, errors: [], hasError: false, validate };
+  }
 }

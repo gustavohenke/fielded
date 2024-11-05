@@ -3,7 +3,7 @@ import {
   Validation,
   ValidationError,
   Validator,
-  createFailedValidation,
+  createStubValidation,
   createValidation,
 } from "./validation";
 
@@ -161,7 +161,7 @@ export class Field<T = unknown> {
    */
   @action
   setError(error: unknown): this {
-    this.validation = createFailedValidation([error]);
+    this.validation = createStubValidation("invalid", [error]);
     return this;
   }
 }

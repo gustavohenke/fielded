@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   AGGREGATE_ERROR,
   ValidationError,
-  createFailedValidation,
+  createStubValidation,
   createValidation,
 } from "./validation";
 import { when } from "mobx";
@@ -201,16 +201,38 @@ describe("createValidation()", () => {
   });
 });
 
-describe("createFailedValidation()", () => {
-  it("has state set to invalid", () => {
-    const validation = createFailedValidation();
-    expect(validation.state).toBe("invalid");
+describe("createStubValidation()", () => {
+  describe("with invalid state", () => {
+    it("has state set to invalid", () => {
+      const validation = createStubValidation("invalid");
+      expect(validation.state).toBe("invalid");
+    });
+
+    it("has the provided errors, mapped to ValidationError", () => {
+      const errors = [new ValidationError("oh no"), "did not work", new Error("try again")];
+      const validation = createStubValidation("invalid", errors);
+      expect(validation.errors).toEqual(errors.map((error) => ValidationError.from(error)));
+    });
   });
 
-  it("has the provided errors, mapped to ValidationError", () => {
-    const errors = [new ValidationError("oh no"), "did not work", new Error("try again")];
-    const validation = createFailedValidation(errors);
-    expect(validation.errors).toEqual(errors.map((error) => ValidationError.from(error)));
+  describe("with valid state", () => {
+    it("has state set to valid", () => {
+      const validation = createStubValidation("valid");
+      expect(validation.state).toBe("valid");
+    });
+
+    it("has the provided value", () => {
+      const value = {};
+      const validation = createStubValidation("valid", value);
+      expect(validation.value).toBe(value);
+    });
+  });
+
+  describe("with pending state", () => {
+    it("has state set to pending", () => {
+      const validation = createStubValidation("pending");
+      expect(validation.state).toBe("pending");
+    });
   });
 });
 

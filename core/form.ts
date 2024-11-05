@@ -13,7 +13,7 @@ import {
  */
 export type FormDataMap = Record<string, Field<any> | Form<any> | FormArray<any>>;
 
-export type FormData = FormDataMap | Form<any>[];
+export type FormData = FormDataMap | Form<any> | Form<any>[];
 
 /**
  * The snapshot type of a valid field.
@@ -28,32 +28,28 @@ export type InvalidFieldSnapshot<T extends Field<any>> = T["rawValue"];
 /**
  * The snapshot type of a valid form.
  */
-export type FormSnapshot<T extends FormData> = T extends Form<infer FormType>[]
-  ? FormSnapshot<FormType>[]
-  : {
-      [K in keyof T]: T[K] extends Field<any>
-        ? FieldSnapshot<T[K]>
-        : T[K] extends Form<infer FormType>
-        ? FormSnapshot<FormType>
-        : T[K] extends FormArray<Form<infer FormType>>
-        ? FormSnapshot<FormType>[]
-        : never;
-    };
+export type FormSnapshot<T extends FormData> = {
+  [K in keyof T]: T[K] extends Field<any>
+    ? FieldSnapshot<T[K]>
+    : T[K] extends Form<infer FormType>
+    ? FormSnapshot<FormType>
+    : T[K] extends FormArray<Form<infer FormType>>
+    ? FormSnapshot<FormType>[]
+    : never;
+};
 
 /**
  * The snapshot type of an invalid form.
  */
-export type InvalidFormSnapshot<T extends FormData> = T extends Form<infer FormType>[]
-  ? InvalidFormSnapshot<FormType>[]
-  : {
-      [K in keyof T]: T[K] extends Field<any>
-        ? InvalidFieldSnapshot<T[K]>
-        : T[K] extends Form<infer FormType>
-        ? InvalidFormSnapshot<FormType>
-        : T[K] extends FormArray<Form<infer FormType>>
-        ? InvalidFormSnapshot<FormType>[]
-        : never;
-    };
+export type InvalidFormSnapshot<T extends FormData> = {
+  [K in keyof T]: T[K] extends Field<any>
+    ? InvalidFieldSnapshot<T[K]>
+    : T[K] extends Form<infer FormType>
+    ? InvalidFormSnapshot<FormType>
+    : T[K] extends FormArray<Form<infer FormType>>
+    ? InvalidFormSnapshot<FormType>[]
+    : never;
+};
 
 export class Form<T extends FormDataMap> {
   /**
@@ -150,7 +146,7 @@ export class Form<T extends FormDataMap> {
 }
 
 export class FormArray<T extends Form<any>> {
-  private readonly validators: Validator<FormSnapshot<T[]>, FormSnapshot<T[]>>[] = [];
+  private readonly validators: Validator<FormSnapshot<T>[], FormSnapshot<T>[]>[] = [];
 
   private readonly initialValue: readonly T[];
 
@@ -161,7 +157,7 @@ export class FormArray<T extends Form<any>> {
   readonly rows: T[];
 
   @observable.ref
-  validation?: Validation<InvalidFormSnapshot<T[]>, FormSnapshot<T[]>>;
+  validation?: Validation<InvalidFormSnapshot<T>[], FormSnapshot<T>[]>;
 
   /**
    * Observable, first validation error of the form array.
@@ -215,8 +211,8 @@ export class FormArray<T extends Form<any>> {
   /**
    * Recursively snapshots the current state of the form and returns it.
    */
-  snapshot(): InvalidFormSnapshot<T[]> {
-    return this.rows.map((f) => f.snapshot()) as FormSnapshot<T[]>;
+  snapshot(): InvalidFormSnapshot<T>[] {
+    return this.rows.map((f) => f.snapshot());
   }
 
   /**
@@ -235,7 +231,7 @@ export class FormArray<T extends Form<any>> {
   }
 
   @action
-  async validate(): Promise<Validation<InvalidFormSnapshot<T[]>, FormSnapshot<T[]>>> {
+  async validate(): Promise<Validation<InvalidFormSnapshot<T>[], FormSnapshot<T>[]>> {
     this.validation = createValidation(() => this.validateAll(), this.validators);
     await this.validation.validate(this.snapshot());
     return this.validation;
@@ -252,7 +248,7 @@ export class FormArray<T extends Form<any>> {
    */
   // TODO: In the future, it might be nice to allow refining the type, so that e.g. an array is
   // cast to a tuple via a validator.
-  addValidators(...validators: Validator<FormSnapshot<T[]>, FormSnapshot<T[]>>[]): this {
+  addValidators(...validators: Validator<FormSnapshot<T>[], FormSnapshot<T>[]>[]): this {
     this.validators.push(...validators);
     return this;
   }

@@ -114,8 +114,10 @@ describe("Form", () => {
       const form = new Form({
         name: Field.text().addValidators(validator),
         address: new Form({}).addValidators(validator),
-        pets: new FormArray([]).addValidators(validator),
+        // TODO: This shouldn't need an explicit type to dodge internal type mismatches.
+        pets: new FormArray<any>([]).addValidators(validator),
       });
+
       expect(form.fields.name.validation).toBeUndefined();
       expect(form.fields.address.validation).toBeUndefined();
       expect(form.fields.pets.validation).toBeUndefined();

@@ -28,28 +28,32 @@ export type InvalidFieldSnapshot<T extends Field<any>> = T["rawValue"];
 /**
  * The snapshot type of a valid form.
  */
-export type FormSnapshot<T extends FormData> = {
-  [K in keyof T]: T[K] extends Field<any>
-    ? FieldSnapshot<T[K]>
-    : T[K] extends Form<infer FormType>
-    ? FormSnapshot<FormType>
-    : T[K] extends FormArray<Form<infer FormType>>
-    ? FormSnapshot<FormType>[]
-    : never;
-};
+export type FormSnapshot<T extends FormData> = T extends Form<infer FormType>
+  ? FormSnapshot<FormType>
+  : {
+      [K in keyof T]: T[K] extends Field<any>
+        ? FieldSnapshot<T[K]>
+        : T[K] extends Form<infer FormType>
+        ? FormSnapshot<FormType>
+        : T[K] extends FormArray<Form<infer FormType>>
+        ? FormSnapshot<FormType>[]
+        : never;
+    };
 
 /**
  * The snapshot type of an invalid form.
  */
-export type InvalidFormSnapshot<T extends FormData> = {
-  [K in keyof T]: T[K] extends Field<any>
-    ? InvalidFieldSnapshot<T[K]>
-    : T[K] extends Form<infer FormType>
-    ? InvalidFormSnapshot<FormType>
-    : T[K] extends FormArray<Form<infer FormType>>
-    ? InvalidFormSnapshot<FormType>[]
-    : never;
-};
+export type InvalidFormSnapshot<T extends FormData> = T extends Form<infer FormType>
+  ? InvalidFormSnapshot<FormType>
+  : {
+      [K in keyof T]: T[K] extends Field<any>
+        ? InvalidFieldSnapshot<T[K]>
+        : T[K] extends Form<infer FormType>
+        ? InvalidFormSnapshot<FormType>
+        : T[K] extends FormArray<Form<infer FormType>>
+        ? InvalidFormSnapshot<FormType>[]
+        : never;
+    };
 
 export class Form<T extends FormDataMap> {
   /**
@@ -212,7 +216,7 @@ export class FormArray<T extends Form<any>> {
    * Recursively snapshots the current state of the form and returns it.
    */
   snapshot(): InvalidFormSnapshot<T>[] {
-    return this.rows.map((f) => f.snapshot());
+    return this.rows.map((f) => f.snapshot() as InvalidFormSnapshot<T>);
   }
 
   /**

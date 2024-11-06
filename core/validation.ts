@@ -114,7 +114,14 @@ export function createValidation<InvalidValue, Value extends InvalidValue = Inva
         const errors = [];
         for (const validator of allValidators) {
           try {
-            await (typeof validator === "function" ? validator(value) : validator.validate(value));
+            result = typeof validator === "function" ? validator(value) : validator.validate(value);
+
+            // Only await if the result looks like a promise. Makes validation chains such as
+            // `val => { if (val == something) { throw ... } }` less awkward to debug,
+            // as throwing is synchronous, but returning isn't.
+            if (result && typeof result === "object" && "then" in result) {
+              await result;
+            }
           } catch (e: unknown) {
             if (e === AGGREGATE_ERROR) {
               result = e;

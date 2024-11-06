@@ -114,13 +114,11 @@ export function createValidation<InvalidValue, Value extends InvalidValue = Inva
         const errors = [];
         for (const validator of allValidators) {
           try {
-            result = await (typeof validator === "function"
-              ? validator(value)
-              : validator.validate(value));
+            await (typeof validator === "function" ? validator(value) : validator.validate(value));
           } catch (e: unknown) {
             if (e === AGGREGATE_ERROR) {
               result = e;
-              return;
+              break;
             }
 
             const error = ValidationError.from(e);

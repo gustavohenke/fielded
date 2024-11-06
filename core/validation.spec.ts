@@ -145,14 +145,23 @@ describe("createValidation()", () => {
 
     describe("on AGGREGATE_ERROR", () => {
       it("transitions to invalid state and sets whatever errors", async () => {
+        const validation = createValidation(() => {
+          throw AGGREGATE_ERROR;
+        });
+        await validation.validate("foo");
+        expect(validation.state).toBe("invalid");
+      });
+
+      it("sets preexisting errors", async () => {
         const validation = createValidation(
           () => {
             throw new ValidationError("foo", { bail: false });
           },
-          () => AGGREGATE_ERROR,
+          () => {
+            throw AGGREGATE_ERROR;
+          },
         );
         await validation.validate("foo");
-        expect(validation.state).toBe("invalid");
         expect(validation.errors).toHaveLength(1);
       });
 
@@ -161,7 +170,9 @@ describe("createValidation()", () => {
           () => {
             throw new ValidationError("foo", { bail: false });
           },
-          async () => AGGREGATE_ERROR,
+          async () => {
+            throw AGGREGATE_ERROR;
+          },
         );
         validation.validate("foo");
         expect(validation.state).toBe("pending");

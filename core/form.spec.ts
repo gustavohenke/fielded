@@ -183,18 +183,13 @@ describe("Form", () => {
         pets: new FormArray<any>([]).addValidators(validator),
       });
 
-      expect(form.fields.name.validation).toBeUndefined();
-      expect(form.fields.address.validation).toBeUndefined();
-      expect(form.fields.pets.validation).toBeUndefined();
-
+      // from field instantiation
+      expect(validator).toHaveBeenCalledTimes(1);
       form.validate();
-      expect(form.fields.name.validation).not.toBeUndefined();
-      expect(form.fields.address.validation).not.toBeUndefined();
-      expect(form.fields.pets.validation).not.toBeUndefined();
 
       expect(form.validation?.state).toBe("pending");
       await when(() => form.validation?.state !== "pending");
-      expect(validator).toHaveBeenCalledTimes(3);
+      expect(validator).toHaveBeenCalledTimes(4);
     });
 
     it("triggers own validators", async () => {

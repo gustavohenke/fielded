@@ -4,6 +4,14 @@ import { Field } from "./field";
 import { ValidationError } from "./validation";
 
 describe("Field", () => {
+  it("is validated on instantiation", async () => {
+    const validator = vi.fn(() => Promise.resolve());
+    const field = Field.fromValidator(validator);
+    expect(validator).toHaveBeenCalled();
+    expect(field.validation.state).toBe("pending");
+    await when(() => field.validation.state === "valid");
+  });
+
   describe("#set()", () => {
     it("updates the raw value of the field", () => {
       const field = Field.number();
@@ -42,35 +50,44 @@ describe("Field", () => {
   });
 
   describe("#reset()", () => {
-    it("removes validation state", () => {
-      const field = Field.text("foo");
-      field.set("bar").reset();
-      expect(field.validation).toBeUndefined();
-    });
-
     it("sets initial value", () => {
       const field = Field.text("foo");
       field.set("bar").reset();
       expect(field.rawValue).toBe("foo");
     });
+
+    it("revalidates", async () => {
+      const field = Field.text("foo").addValidators((val) => {
+        if (val === "bar") {
+          throw "nope";
+        }
+      });
+      field.set("bar");
+
+      expect(field.validation.state).toBe("invalid");
+      field.reset();
+      expect(field.validation.state).toBe("valid");
+    });
   });
 
   describe("#validate()", () => {
-    it("sets #validation", async () => {
+    it("resets #validation if it had been changed through #setError()", async () => {
       const field = Field.text();
-      expect(field.validation).toBeUndefined();
-
+      const original = field.validation;
+      field.setError("oh no");
       field.validate();
-      expect(field.validation).not.toBeUndefined();
+      expect(field.validation).toBe(original);
     });
 
     it("triggers validation", async () => {
       const validator = vi.fn(() => Promise.resolve());
       const field = Field.text().addValidators(validator);
+      await when(() => field.validation.state !== "pending");
+
       field.validate();
-      expect(field.validation!.state).toBe("pending");
-      await when(() => field.validation!.state !== "pending");
-      expect(validator).toHaveBeenCalledTimes(1);
+      expect(field.validation.state).toBe("pending");
+      await when(() => field.validation.state !== "pending");
+      expect(validator).toHaveBeenCalledTimes(2);
     });
 
     it("returns the finished validation", async () => {
@@ -132,18 +149,17 @@ describe("Field", () => {
   });
 
   describe("#setError()", () => {
-    it("sets the validation state of the field", () => {
+    it("changes the validation state of the field", () => {
       const field = Field.number();
-      expect(field.validation).toBeUndefined();
-
+      const original = field.validation;
       field.setError("nope");
-      expect(field.validation).not.toBeUndefined();
+      expect(field.validation).not.toBe(original);
     });
 
     it("marks the field invalid with the given error", () => {
       const field = Field.number();
       field.setError("nope");
-      expect(field.validation?.state).toBe("invalid");
+      expect(field.validation.state).toBe("invalid");
       expect(field.error).toEqual(ValidationError.from("nope"));
     });
   });

@@ -67,13 +67,15 @@ export class Field<T = unknown> {
    */
   @computed
   get value(): T | undefined {
-    if (this.validation?.state === "valid") {
+    if (this.validation.state === "valid") {
       return this.validation.value;
     }
   }
 
   @observable.ref
-  validation?: Validation<FieldValue<T> | undefined, T>;
+  validation: Validation<FieldValue<T> | undefined, T>;
+
+  private initialValidation: Validation<FieldValue<T> | undefined, T>;
 
   /**
    * The first validation error of the field, if any.
@@ -91,7 +93,9 @@ export class Field<T = unknown> {
 
   private constructor(private readonly config: FieldConfig<T>) {
     makeObservable(this);
-    this.rawValue = this.config.initialValue;
+    this.initialValidation = createValidation(this.config.validators);
+    this.validation = this.initialValidation;
+    this.reset();
   }
 
   /**
@@ -134,13 +138,15 @@ export class Field<T = unknown> {
    */
   @action
   reset(): void {
-    this.validation = undefined;
     this.rawValue = this.config.initialValue;
+    this.validate();
   }
 
   @action
   async validate(): Promise<Validation<FieldValue<T>, T>> {
-    this.validation = createValidation(this.config.validators);
+    if (this.initialValidation !== this.validation) {
+      this.validation = this.initialValidation;
+    }
     await this.validation.validate(this.rawValue);
     return this.validation;
   }

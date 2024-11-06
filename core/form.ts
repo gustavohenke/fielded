@@ -1,4 +1,4 @@
-import { action, makeObservable, observable } from "mobx";
+import { action, computed, makeObservable, observable } from "mobx";
 import { Field } from "./field";
 import {
   AGGREGATE_ERROR,
@@ -70,17 +70,59 @@ export class Form<T extends FormDataMap> {
   validation?: Validation<InvalidFormSnapshot<T>, FormSnapshot<T>>;
 
   /**
-   * Observable, first validation error of the form.
+   * Observable, first validation error from the form's nested fields, or if there aren't any,
+   * its own validation errors.
+   *
+   * This works like this because the form validators expect all fields to be valid before running.
+   * @see addValidators
    */
   get error(): ValidationError | undefined {
     return this.errors.at(0);
   }
 
   /**
-   * Observable list of validation errors of the form.
+   * Observable list of validation errors either from the form's nested fields,
+   * or if there aren't any, the form's own validation errors.
+   *
+   * This works like this because the form validators expect all fields to be valid before running.
+   * @see addValidators
    */
+  @computed
   get errors(): readonly ValidationError[] {
+    if (this.fieldErrors.length) {
+      return this.fieldErrors;
+    }
+    return this.formErrors;
+  }
+
+  /**
+   * Observable, first validation error from the form itself.
+   */
+  get formError(): ValidationError | undefined {
+    return this.formErrors.at(0);
+  }
+
+  /**
+   * Observable list of validation errors from the form itself.
+   */
+  get formErrors(): readonly ValidationError[] {
     return this.validation?.errors || [];
+  }
+
+  /**
+   * Observable, first validation error from any of the form's nested fields.
+   */
+  get fieldError(): ValidationError | undefined {
+    return this.fieldErrors.at(0);
+  }
+
+  /**
+   * Observable list of validation errors from its nested fields,
+   * followed by the form's own validation errors.
+   */
+  @computed
+  get fieldErrors(): readonly ValidationError[] {
+    return Object.values(this.fields).flatMap((field) => field.errors);
   }
 
   constructor(fields: T) {

@@ -40,13 +40,33 @@ Undefined unless the form has been validated before.
 
 ### `.errors`
 
-Observable list of validation errors of the form.
-Shorthand for `form.validation.errors`.
+Observable list of validation errors of the form's fields, or if there aren't any,
+its own validation errors.
 
 ### `.error`
 
-Observable validation error of the form, if any.
-Shorthand for `form.validation.errors[0]`.
+Observable, first validation error from the form's fields, or if there aren't any,
+the first from its own validation errors.
+Shorthand for `form.errors[0]`.
+
+### `.fieldErrors`
+
+Observable list of validation errors from the form's fields.
+
+### `.fieldError`
+
+Observable first validation error from the form's fields.
+Shorthand for `form.fieldErrors[0]`.
+
+### `.formErrors`
+
+Observable list of validation errors from the form itself.
+Shorthand for `form.validation.errors`.
+
+### `.formError`
+
+Observable validation error from the form itself.
+Shorthand for `form.formErrors[0]`.
 
 ## Methods
 

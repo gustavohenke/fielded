@@ -4,13 +4,78 @@ import { Field } from "./field";
 import { Form, FormArray } from "./form";
 
 describe("Form", () => {
+  const makeFormForErrorTesting = () => {
+    const fieldValidator = vi
+      .fn()
+      .mockRejectedValueOnce("from field")
+      .mockImplementationOnce(() => {});
+    return new Form({
+      field: Field.text().addValidators(fieldValidator),
+    }).addValidators(() => {
+      throw "from form";
+    });
+  };
+
   describe("#errors", () => {
-    it("is empty when the form has not been validated", async () => {
+    it("is a list of all nested field errors or the form own errors", async () => {
+      const form = makeFormForErrorTesting();
+      await form.validate();
+      expect(form.errors).toHaveLength(1);
+      expect(form.errors[0].message).toBe("from field");
+
+      await form.validate();
+      expect(form.errors).toHaveLength(1);
+      expect(form.errors[0].message).toBe("from form");
+    });
+
+    it("is empty when the form nor the fields have been validated", async () => {
       const form = new Form({}).addValidators(() => Promise.reject("nope"));
       expect(form.errors).toHaveLength(0);
 
       form.validate();
       await when(() => form.errors.length > 0);
+    });
+  });
+
+  describe("#fieldErrors", () => {
+    it("is a list of all nested field errors or the form own errors", async () => {
+      const form = makeFormForErrorTesting();
+      await form.validate();
+      expect(form.fieldErrors).toHaveLength(1);
+      expect(form.fieldErrors[0].message).toBe("from field");
+
+      await form.validate();
+      expect(form.fieldErrors).toHaveLength(0);
+    });
+
+    it("is empty when none of the fields have not been validated", async () => {
+      const form = new Form({
+        name: Field.text().addValidators(() => Promise.reject("nope")),
+      });
+      expect(form.fieldErrors).toHaveLength(0);
+
+      form.validate();
+      await when(() => form.fieldErrors.length > 0);
+    });
+  });
+
+  describe("#formErrors", () => {
+    it("is a list of all nested field errors or the form own errors", async () => {
+      const form = makeFormForErrorTesting();
+      await form.validate();
+      expect(form.formErrors).toHaveLength(0);
+
+      await form.validate();
+      expect(form.formErrors).toHaveLength(1);
+      expect(form.formErrors[0].message).toBe("from form");
+    });
+
+    it("is empty when the form has not been validated", async () => {
+      const form = new Form({}).addValidators(() => Promise.reject("nope"));
+      expect(form.formErrors).toHaveLength(0);
+
+      form.validate();
+      await when(() => form.formErrors.length > 0);
     });
   });
 

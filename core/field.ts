@@ -143,7 +143,7 @@ export class Field<T = unknown> {
   }
 
   @action
-  async validate(): Promise<Validation<FieldValue<T>, T>> {
+  async validate(): Promise<Validation<FieldValue<T> | undefined, T>> {
     if (this.initialValidation !== this.validation) {
       this.validation = this.initialValidation;
     }

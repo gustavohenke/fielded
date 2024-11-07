@@ -98,6 +98,7 @@ export const AGGREGATE_ERROR = {};
 export function createValidation<InvalidValue, Value extends InvalidValue = InvalidValue>(
   ...validators: (Validator<InvalidValue, Value> | Validator<InvalidValue, Value>[])[]
 ): Validation<InvalidValue, Value> {
+  let lastValue: InvalidValue;
   const allValidators = validators.flat();
   const validation = makeAutoObservable<Validation<InvalidValue, Value>>(
     {
@@ -108,6 +109,7 @@ export function createValidation<InvalidValue, Value extends InvalidValue = Inva
         return this.errors.length > 0;
       },
       async validate(value: InvalidValue) {
+        lastValue = value;
         update({ state: "pending", errors: [], value: undefined as never });
 
         let result: unknown;
@@ -134,6 +136,11 @@ export function createValidation<InvalidValue, Value extends InvalidValue = Inva
               break;
             }
           }
+        }
+
+        // Avoid clobbering the state if there were newer calls made in parallel
+        if (lastValue !== value) {
+          return;
         }
 
         if (result === AGGREGATE_ERROR || errors.length) {

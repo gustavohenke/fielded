@@ -18,21 +18,23 @@ A validation calls its validators in sequence, stopping at the first one that th
 or returns a promise that rejects. The error is converted using [`ValidationError.from()`](#frome).
 
 ```ts
-const username = Field.text()
-  .addValidators(value => {
+const username = Field.text().addValidators(
+  (value) => {
     if (value.length < 3) {
-      throw new Error('Must have at least 3 characters');
+      throw new Error("Must have at least 3 characters");
     }
-  }, value => {
+  },
+  (value) => {
     if (reservedUsernames.includes(value)) {
-      throw new Error('Not available');
+      throw new Error("Not available");
     }
-  });
+  },
+);
 
-username.set('a');
+username.set("a");
 console.log(username.validation.errors); // ['Must have at least 3 characters']
 
-username.set('some_reserved_name');
+username.set("some_reserved_name");
 console.log(username.validation.errors); // ['Not available']
 ```
 
@@ -40,18 +42,20 @@ If a validator throws a `ValidationError` whose [`bail` property](#bail) is set 
 then that validator _will not_ stop the validation, and the next validator runs normally.
 
 ```ts
-const imageUrl = Field.text()
-  .addValidators(value => {
-    if (!value.startsWith('https')) {
-      throw new ValidationError('Must be an HTTPS URL', { bail: false });
+const imageUrl = Field.text().addValidators(
+  (value) => {
+    if (!value.startsWith("https")) {
+      throw new ValidationError("Must be an HTTPS URL", { bail: false });
     }
-  }, value => {
-    if (!value.endsWith('.png')) {
-      throw new Error('Must be a PNG image');
+  },
+  (value) => {
+    if (!value.endsWith(".png")) {
+      throw new Error("Must be a PNG image");
     }
-  });
+  },
+);
 
-imageUrl.set('example.com/avatar.jpg');
+imageUrl.set("example.com/avatar.jpg");
 console.log(username.validation.errors); // ['Must be an HTTPS URL', 'Must be a PNG image']
 ```
 
@@ -79,14 +83,14 @@ Shorthand for `validation.errors.length > 0`.
 The valid value of the field. Only set when [`state`](#state) is `valid`.
 
 ```ts
-const age = Field.number().addValidators(value => {
+const age = Field.number().addValidators((value) => {
   if (value < 18) {
-    throw new Error('Must be an adult');
+    throw new Error("Must be an adult");
   }
 });
 
 age.set(17);
-if (age.validation.state === 'valid') {
+if (age.validation.state === "valid") {
   console.log(`Your age is ${age.validation.value}`);
 }
 ```
@@ -98,6 +102,9 @@ if (age.validation.state === 'valid') {
 Triggers a validation on the passed value, and returns a promise for when the validation has finished.
 
 Manually calling this method will reset the validation state and rerun every validator.
+
+If this method is called multiple times in parallel, the validation state will be updated only when
+the last call finishes, to avoid clobbering it.
 
 ## `ValidationError`
 
@@ -117,12 +124,12 @@ Creates a new `ValidationError` with the given message and options.
   For example, if your validator throws some unexpected error, you might want to wrap it:
 
   ```ts
-  const username = Field.text().addValidators(async value => {
-    const available = await service.isAvailable(value).catch(e => {
-      throw new ValidationError('Something went wrong', { cause: e });
+  const username = Field.text().addValidators(async (value) => {
+    const available = await service.isAvailable(value).catch((e) => {
+      throw new ValidationError("Something went wrong", { cause: e });
     });
     if (!available) {
-      throw new Error('Not available');
+      throw new Error("Not available");
     }
   });
   ```
@@ -141,5 +148,7 @@ Converts any value to `ValidationError`.
 - Otherwise, `e` is converted to a string and set as the error's message and cause.
 
 ### Properties
+
 #### `.bail`
+
 Whether the validation should be stopped when hitting this error.

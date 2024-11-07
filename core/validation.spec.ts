@@ -77,6 +77,18 @@ describe("createValidation()", () => {
       expect(validation.value).toBeUndefined();
     });
 
+    it("does not clobber the validation state when called with different values", async () => {
+      const validation = createValidation(() => new Promise((resolve) => setTimeout(resolve, 0)));
+      const promise1 = validation.validate("foo");
+      const promise2 = validation.validate("bar");
+
+      await promise1;
+      expect(validation.state).toBe("pending");
+
+      await promise2;
+      expect(validation.state).toBe("valid");
+    });
+
     describe("on success", () => {
       it("transitions to valid state", async () => {
         const validation = createValidation();

@@ -38,7 +38,7 @@ describe("Form", () => {
   });
 
   describe("#fieldErrors", () => {
-    it("is a list of all nested field errors or the form own errors", async () => {
+    it("is a list of all nested field errors", async () => {
       const form = makeFormForErrorTesting();
       await form.validate();
       expect(form.fieldErrors).toHaveLength(1);
@@ -60,7 +60,7 @@ describe("Form", () => {
   });
 
   describe("#formErrors", () => {
-    it("is a list of all nested field errors or the form own errors", async () => {
+    it("is a list of all form own errors", async () => {
       const form = makeFormForErrorTesting();
       await form.validate();
       expect(form.formErrors).toHaveLength(0);

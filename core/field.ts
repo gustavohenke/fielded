@@ -6,6 +6,7 @@ import {
   createStubValidation,
   validate,
 } from "./validation";
+import { Either } from "./utils";
 
 /**
  * The value of a field is
@@ -39,13 +40,6 @@ type FieldValue<T> = T extends string
   : T extends unknown
   ? any
   : never;
-
-/**
- * Utility type to check whether `A` is `never`, and if it's, fallback to `B` instead.
- *
- * @see https://stackoverflow.com/a/58978075/2083599
- */
-type Either<A, B> = [A] extends [never] ? B : A;
 
 /**
  * Configurations that a field of the specified `T` type can have.

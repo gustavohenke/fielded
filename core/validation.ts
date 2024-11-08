@@ -1,4 +1,5 @@
 import { action, makeAutoObservable, makeObservable, observable } from "mobx";
+import { Mutable } from "./utils";
 
 type PendingValidation = {
   readonly state: "pending";
@@ -86,13 +87,6 @@ export class ValidationError extends Error {
  * invalid if the components have errors.
  */
 export const AGGREGATE_ERROR = {};
-
-/**
- * Utility to remove the readonly flags from a type `T`
- */
-type Mutable<T> = {
-  -readonly [K in keyof T]: T[K];
-};
 
 export function validate<InvalidValue, Value extends InvalidValue = InvalidValue>(
   value: InvalidValue,

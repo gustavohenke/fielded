@@ -4,7 +4,7 @@ import {
   ValidationError,
   Validator,
   createStubValidation,
-  createValidation,
+  validate,
 } from "./validation";
 
 /**
@@ -68,7 +68,7 @@ export class Field<T = unknown> {
   @computed
   get value(): T | undefined {
     if (this.validation?.state === "valid") {
-      return this.validation.value;
+      return this.validation?.value;
     }
   }
 
@@ -91,7 +91,7 @@ export class Field<T = unknown> {
 
   private constructor(private readonly config: FieldConfig<T>) {
     makeObservable(this);
-    this.rawValue = this.config.initialValue;
+    this.reset();
   }
 
   /**
@@ -140,8 +140,8 @@ export class Field<T = unknown> {
 
   @action
   async validate(): Promise<Validation<FieldValue<T> | undefined, T>> {
-    this.validation = createValidation(this.config.validators);
-    await this.validation.validate(this.rawValue);
+    this.validation = validate(this.rawValue, this.config.validators);
+    await this.validation.finished;
     return this.validation;
   }
 

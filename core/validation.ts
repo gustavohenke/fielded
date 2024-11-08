@@ -1,4 +1,4 @@
-import { action, makeAutoObservable, observable } from "mobx";
+import { action, makeAutoObservable, makeObservable, observable } from "mobx";
 
 type PendingValidation = {
   readonly state: "pending";
@@ -19,26 +19,21 @@ type InvalidValidation = {
   readonly value: never;
 };
 
-type ValidationState<Value> = {
+type BaseValidation = {
+  /**
+   * A promise that signals when the validation has completed,
+   * e.g. its state has changed from pending to another value
+   */
+  readonly finished: Promise<void>;
+
   /**
    * An observable list of errors for this validation.
    */
   readonly errors: readonly ValidationError[];
-} & (PendingValidation | ValidValidation<Value> | InvalidValidation);
-
-export type Validation<InvalidValue, Value = InvalidValue> = ValidationState<Value> & {
-  /**
-   * Whether this validation produced any errors.
-   * Shorthand for `errors.length > 0`.
-   */
-  readonly hasError: boolean;
-
-  /**
-   * Runs the validation on the passed value.
-   * @param value the value being validated.
-   */
-  validate(value: InvalidValue): Promise<unknown>;
 };
+
+export type Validation<InvalidValue, Value = InvalidValue> = BaseValidation &
+  (PendingValidation | ValidValidation<Value> | InvalidValidation);
 
 /**
  * A function which receives a value, and must throw to signal that the value is invalid.
@@ -93,73 +88,70 @@ export class ValidationError extends Error {
 export const AGGREGATE_ERROR = {};
 
 /**
- * Create a validation state based off of a list of validators.
+ * Utility to remove the readonly flags from a type `T`
  */
-export function createValidation<InvalidValue, Value extends InvalidValue = InvalidValue>(
-  ...validators: (Validator<InvalidValue, Value> | Validator<InvalidValue, Value>[])[]
+type Mutable<T> = {
+  -readonly [K in keyof T]: T[K];
+};
+
+export function validate<InvalidValue, Value extends InvalidValue = InvalidValue>(
+  value: InvalidValue,
+  validators: (Validator<InvalidValue, Value> | Validator<InvalidValue, Value>[])[],
 ): Validation<InvalidValue, Value> {
-  let lastValue: InvalidValue;
   const allValidators = validators.flat();
-  const validation = makeAutoObservable<Validation<InvalidValue, Value>>(
+  const validation: Mutable<Validation<InvalidValue, Value>> = makeObservable(
     {
       state: "pending",
       value: undefined as never,
       errors: [],
-      get hasError() {
-        return this.errors.length > 0;
-      },
-      async validate(value: InvalidValue) {
-        lastValue = value;
-        update({ state: "pending", errors: [], value: undefined as never });
-
-        let result: unknown;
-        const errors = [];
-        for (const validator of allValidators) {
-          try {
-            result = typeof validator === "function" ? validator(value) : validator.validate(value);
-
-            // Only await if the result looks like a promise. Makes validation chains such as
-            // `val => { if (val == something) { throw ... } }` less awkward to debug,
-            // as throwing is synchronous, but returning isn't.
-            if (result && typeof result === "object" && "then" in result) {
-              await result;
-            }
-          } catch (e: unknown) {
-            if (e === AGGREGATE_ERROR) {
-              result = e;
-              break;
-            }
-
-            const error = ValidationError.from(e);
-            errors.push(error);
-            if (error.bail) {
-              break;
-            }
-          }
-        }
-
-        // Avoid clobbering the state if there were newer calls made in parallel
-        if (lastValue !== value) {
-          return;
-        }
-
-        if (result === AGGREGATE_ERROR || errors.length) {
-          update({ state: "invalid", errors, value: undefined as never });
-        } else {
-          update({ state: "valid", errors, value: value as unknown as Value });
-        }
-      },
+      finished: Promise.resolve(),
     },
     {
+      state: observable.ref,
+      value: observable.ref,
       errors: observable.shallow,
     },
   );
-
-  const update = action("fielded::validation#update", (update: ValidationState<Value>) =>
-    Object.assign(validation, update),
+  const update = action(
+    "fielded::validation#update",
+    (update: Omit<Validation<Value>, "finished">) => Object.assign(validation, update),
   );
-
+  validation.finished = run();
   return validation;
+
+  async function run() {
+    let result: unknown;
+    const errors = [];
+    for (const validator of allValidators) {
+      try {
+        result = typeof validator === "function" ? validator(value) : validator.validate(value);
+
+        // Only await if the result looks like a promise. Makes validation chains such as
+        // `val => { if (val == something) { throw ... } }` less awkward to debug,
+        // as throwing is synchronous, but returning isn't.
+        if (result && typeof result === "object" && "then" in result) {
+          await result;
+        }
+      } catch (e: unknown) {
+        if (e === AGGREGATE_ERROR) {
+          result = e;
+          break;
+        }
+
+        const error = ValidationError.from(e);
+        errors.push(error);
+        if (error.bail) {
+          break;
+        }
+      }
+    }
+
+    if (result === AGGREGATE_ERROR || errors.length) {
+      update({ state: "invalid", errors, value: undefined as never });
+    } else {
+      update({ state: "valid", errors, value: value as unknown as Value });
+    }
+  }
 }
 
 /**
@@ -187,10 +179,10 @@ export function createStubValidation<T = any>(
   state: Validation<T>["state"],
   arg?: any,
 ): Validation<T> {
-  const validate = async () => {};
+  const finished = Promise.resolve();
   switch (state) {
     case "valid":
-      return { state, value: arg, errors: [], hasError: false, validate };
+      return { state, value: arg, errors: [], finished };
 
     case "invalid":
       const errors = arg || [];
@@ -198,11 +190,10 @@ export function createStubValidation<T = any>(
         state,
         value: undefined as never,
         errors: errors.map((error: any) => ValidationError.from(error)),
-        hasError: errors.length > 0,
-        validate,
+        finished,
       };
 
     case "pending":
-      return { state, value: undefined as never, errors: [], hasError: false, validate };
+      return { state, value: undefined as never, errors: [], finished };
   }
 }

@@ -1,12 +1,6 @@
 import { action, computed, makeObservable, observable } from "mobx";
 import { Field } from "./field";
-import {
-  AGGREGATE_ERROR,
-  Validation,
-  ValidationError,
-  Validator,
-  createValidation,
-} from "./validation";
+import { AGGREGATE_ERROR, Validation, ValidationError, Validator, validate } from "./validation";
 
 /**
  * A map from field name to its state, in the form of either `Field`, `Form` or `FormArray`.
@@ -158,8 +152,8 @@ export class Form<T extends FormDataMap> {
 
   @action
   async validate(): Promise<Validation<InvalidFormSnapshot<T>, FormSnapshot<T>>> {
-    this.validation = createValidation(() => this.validateAll(), this.validators);
-    await this.validation.validate(this.snapshot());
+    this.validation = validate(this.snapshot(), [() => this.validateAll(), this.validators]);
+    await this.validation.finished;
     return this.validation;
   }
 
@@ -278,8 +272,8 @@ export class FormArray<T extends Form<any>> {
 
   @action
   async validate(): Promise<Validation<InvalidFormSnapshot<T>[], FormSnapshot<T>[]>> {
-    this.validation = createValidation(() => this.validateAll(), this.validators);
-    await this.validation.validate(this.snapshot());
+    this.validation = validate(this.snapshot(), [() => this.validateAll(), this.validators]);
+    await this.validation.finished;
     return this.validation;
   }
 

@@ -7,7 +7,9 @@ describe("Form", () => {
   const makeFormForErrorTesting = () => {
     const fieldValidator = vi
       .fn()
-      .mockRejectedValueOnce("from field")
+      .mockImplementationOnce(() => {
+        throw "from field";
+      })
       .mockImplementationOnce(() => {});
     return new Form({
       field: Field.text().addValidators(fieldValidator),

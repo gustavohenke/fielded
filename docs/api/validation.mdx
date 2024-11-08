@@ -69,14 +69,13 @@ The current state of the validation. Can be one of
 - `valid`: if the validation is complete, and the value is valid;
 - `invalid`: if the validation is completed, and there are errors.
 
+#### `.finished`
+
+A promise for the validation completion. Awaiting on it guarantees `state !== 'pending'`.
+
 #### `.errors`
 
 An observable list of [`ValidationError`](#validationerror)s for the last validated value.
-
-#### `.hasError`
-
-Whether there's any error in the validation state.
-Shorthand for `validation.errors.length > 0`.
 
 #### `.value`
 
@@ -94,17 +93,6 @@ if (age.validation.state === "valid") {
   console.log(`Your age is ${age.validation.value}`);
 }
 ```
-
-### Methods
-
-#### `.validate(value)`
-
-Triggers a validation on the passed value, and returns a promise for when the validation has finished.
-
-Manually calling this method will reset the validation state and rerun every validator.
-
-If this method is called multiple times in parallel, the validation state will be updated only when
-the last call finishes, to avoid clobbering it.
 
 ## `ValidationError`
 

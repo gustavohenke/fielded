@@ -1,0 +1,7 @@
+/coverage
+/dist
+/website/.docusaurus
+/website/build
+
+# Ignored as managed by npm instead
+package.json
